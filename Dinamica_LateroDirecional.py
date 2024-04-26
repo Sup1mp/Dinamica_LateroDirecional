@@ -1,5 +1,5 @@
 import numpy as np
-from math import sin, cos, radians
+from math import sin, cos, radians, sqrt
 
 class Dinamica_LateroDirecional:
     def __init__(self, m:float, Ix:float, Iz:float, Ixz:float, ro:float, V0:float, S:float, b:float, theta_e:float):
@@ -74,7 +74,6 @@ class Dinamica_LateroDirecional:
         return self.B
     
     def matriz_G (self):
-        I = np.eye(self.A.size)
 
         # p = [
         #     1,
@@ -82,10 +81,43 @@ class Dinamica_LateroDirecional:
         #     (b*(m*b*(Lr*Np - Lp*Nr) + Lv*(Iz*Yp + Ixz*Yr) + Nv*(Ixz*Yp + Ix*Yr) - Yv*(Iz*Lp + Ixz*Lr + Ixz*Np + Ix*Nr)) + m*(We*(Ixz*Nv + Iz*Lv) - Ue*(Ixz*Lv + Ix*Nv)))/(m*(Ixz^2 - Ix*Iz)),
         #     (b*(m*(We*(Lr*Nv - Lv*Nr) + Ue*(Lp*Nv - Lv*Np)) + b*(Yv*(Lp*Nr - Lr*Np) + Yr*(Lv*Np - Lp*Nv) + Yp*(Lr*Nv - Lv*Nr))) + g*m*(cos(theta_e)*(Iz*Lv + Ixz*Nv) + sin(theta_e)*(Ixz*Lv + Ix*Nv)))/(m*(Ixz^2 - Ix*Iz)),
         #     (b*g*(cos(theta_e)*(Lr*Nv - Lv*Nr) + sin(theta_e)*(Lv*Np - Lp*Nv)))/(Ixz^2 - Ix*Iz)
-
         # ]
 
         return
+    
+    def aprox_Tr (self, Ix_d, Lp_d):
+        '''
+        Retorna a constante de tempo Tr do Roll Mode aproximada
+            Ix_d : momento de inércia Ix eixo aeronautico (kg*m^2)
+            Lp_d : derivada dimensional Lp
+        '''
+        self.Tr_ap = -Ix_d/Lp_d
+        
+        return self.Tr_ap
+    
+    def aprox_Ts (self, V0, Lv, Nv, Lp, Np, Lr, Nr):
+        '''
+        Retorna a constante de tempo Ts do Spiral Mode aproximada
+            V0 : velocidade da aeronave (m/s)
+        '''
+        self.Ts_ap = -V0/9.81 * (Lv*Np - Lp*Nv)/(Lr*Nv - Lv*Nr)
+
+        return self.Ts_ap
+    
+    def aprox_freq (self, Iz_d, m_d, Yv_d, Nv_d, Nr_d):
+        '''
+        Retorna as frequências naturais omega_d e de amortecimento zeta_d aproximadas para o Dutch Roll
+            Iz_d : momento de inércia Iz eixo aeronautico (kg*m^2)
+            m_d : massa da aeronave (kg)
+            Yv_d : derivada dimensional Yv
+            Nv_d : derivada dimensional Nv
+            Nr_d : derivada dimensional Nr
+        '''
+
+        self.wd_ap = sqrt(V0*Nv_d/Iz_d)                         # frequencia natural omega_d
+        self.cd_ap = -(Nr_d/Iz_d + Yv_d/m_d)/(2*self.wd_ap)     # frequencia de amortecimento zeta_d
+
+        return self.wd_ap, self.cd_ap
 
 if __name__ == "__main__":
     # Derivadas do McDonnell F-4C Phantom, body axes reference
