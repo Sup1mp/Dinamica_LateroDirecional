@@ -1,0 +1,115 @@
+import numpy as np
+from math import sin, cos, radians
+
+class Dinamica_LateroDirecional:
+    def __init__(self, m, Ix, Iz, Ixz, ro, V0, S, b, theta_e):
+
+        self.S = S                          # área da asa (m^2)
+        self.b = b                          # envergadura da asa (m)
+        self.V0 = V0                        # velocidade (m/s)
+        self.theta_e = radians(theta_e)     # angulo de equilibrio entre direção de voo e o horizonte (deg)
+
+        # adimensionalizadores
+        ad1 = 0.5*ro*V0*S
+        ad2 = ad1*b
+
+        self.m = m/ad1                      # massa adimensional
+        self.Ix = Ix/ad2                    # momento de inercia Ix adimensional
+        self.Iz = Iz/ad2                    # momento de inercia Iz adimensional
+        self.Ixz = Ixz/ad2                  # momento de inercia Ixz adimensional
+
+        return
+
+    def matriz_A (self, Yv, Lv, Nv, Yp, Lp, Np, Yr, Lr, Nr):
+
+        a1 = self.Ix*self.Iz - (self.Ixz**2)   # simplificação
+        g = 9.81    # gravidade
+
+        # voo reto e simétrico
+        Ue = self.V0*cos(self.theta_e)
+        We = self.V0*sin(self.theta_e)
+
+        # matriz de estabilidade
+        self.A = np.array([
+            [Yv/self.m, (Yp*self.b + self.m*We)/self.m, (Yr*self.b - self.m*Ue)/self.m, g*cos(self.theta_e), g*sin(self.theta_e)],
+            [(self.Ixz*Nv + self.Iz*Lv)/a1, (self.Ixz*Np + self.Iz*Lp)*self.b/a1, (self.Ixz*Nr + self.Iz*Lr)*self.b/a1, 0, 0],
+            [(self.Ix*Nv + self.Ixz*Lv)/a1, (self.Ix*Np + self.Ixz*Lp)*self.b/a1, (self.Ix*Nr + self.Ixz*Lr)*self.b/a1, 0, 0],
+            [0, 1, 0, 0, 0],
+            [0, 0, 1, 0, 0]
+        ])
+
+        return
+
+    def matriz_B (self, Ye, Le, Ne, Yc, Lc, Nc):
+
+        a1 = self.Ix*self.Iz - (self.Ixz**2)   # simplificação
+
+        # matriz de controle
+        self.B = self.V0 * np.array([
+            [Ye/self.m, Yc/self.m],
+            [(self.Ixz*Ne + self.Iz*Le)/a1, (self.Ixz*Nc + self.Iz*Lc)/a1],
+            [(self.Ix*Ne + self.Ixz*Le)/a1, (self.Ix*Nc + self.Ixz*Lc)/a1],
+            [0, 0],
+            [0, 0]
+        ])
+
+        return
+    
+    def matriz_G (self):
+        I = np.eye(self.A.size)
+
+        # p = [
+        #     1,
+        #     (Yv*(Ix*Iz - Ixz^2) + b*m*(Iz*Lp + Ixz*(Lr + Np) + Ix*Nr))/(m*(Ixz^2 - Ix*Iz)),
+        #     (b*(m*b*(Lr*Np - Lp*Nr) + Lv*(Iz*Yp + Ixz*Yr) + Nv*(Ixz*Yp + Ix*Yr) - Yv*(Iz*Lp + Ixz*Lr + Ixz*Np + Ix*Nr)) + m*(We*(Ixz*Nv + Iz*Lv) - Ue*(Ixz*Lv + Ix*Nv)))/(m*(Ixz^2 - Ix*Iz)),
+        #     (b*(m*(We*(Lr*Nv - Lv*Nr) + Ue*(Lp*Nv - Lv*Np)) + b*(Yv*(Lp*Nr - Lr*Np) + Yr*(Lv*Np - Lp*Nv) + Yp*(Lr*Nv - Lv*Nr))) + g*m*(cos(theta_e)*(Iz*Lv + Ixz*Nv) + sin(theta_e)*(Ixz*Lv + Ix*Nv)))/(m*(Ixz^2 - Ix*Iz)),
+        #     (b*g*(cos(theta_e)*(Lr*Nv - Lv*Nr) + sin(theta_e)*(Lv*Np - Lp*Nv)))/(Ixz^2 - Ix*Iz)
+
+        # ]
+
+        return
+
+if __name__ == "__main__":
+    # Derivadas do McDonnell F-4C Phantom, body axes reference
+    ro = 0.3809     # densidade do ar kg/m^3
+
+    m = 17642       # kg
+    Ix = 33898      # kgm^2
+    Iz = 189496     # kgm^2
+    Ixz = 2952      # kgm^2
+
+    S = 49.239      # area da asa m^2
+    b = 11.787      # envergadura da asa m
+
+    V0 = 178        # velocidade m/s
+    theta_e = 9.4   # graus
+
+    ld = Dinamica_LateroDirecional(m, Ix, Iz, Ixz, ro, V0, S, b, theta_e)
+
+    # derivadas
+    Y = {
+        'v': -0.5974,
+        'p': 0,
+        'r': 0,
+        'e': -0.0159,
+        'c': 0.1193
+    }
+    L = {
+        'v': -0.1048,
+        'p': -0.1164,
+        'r': 0.0455,
+        'e': 0.0454,
+        'c': 0.0086
+    }
+    N = {
+        'v': 0.0987,
+        'p': -0.0045,
+        'r': -0.1132,
+        'e': 0.00084,
+        'c': -0.0741
+    }
+
+    ld.matriz_A (Y['v'], L['v'], N['v'], Y['p'], L['p'], N['p'], Y['r'], L['r'], N['r'])
+    ld.matriz_B (Y['e'], L['e'], N['e'], Y['c'], L['c'], N['c'])
+
+    print(f"{ld.A}\n{ld.B}")
