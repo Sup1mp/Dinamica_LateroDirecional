@@ -2,7 +2,19 @@ import numpy as np
 from math import sin, cos, radians
 
 class Dinamica_LateroDirecional:
-    def __init__(self, m, Ix, Iz, Ixz, ro, V0, S, b, theta_e):
+    def __init__(self, m:float, Ix:float, Iz:float, Ixz:float, ro:float, V0:float, S:float, b:float, theta_e:float):
+        '''
+        Classe da Dinâmica Latero-Direcional de aeronaves, se inicializa com:
+            m : massa (kg)
+            Ix : momento de inércia Ix eixo aeronautico (kg*m^2)
+            Iz : momento de inércia Iz eixo aeronautico(kg*m^2)
+            Ixz : momento de inércia Ixz eixo aeronautico(kg*m^2)
+            ro : densidade do ar (kg/m^3)
+            V0 : velocidade da aeronave (m/s)
+            S : área da asa (m^2)
+            b : envergadura da asa (m)
+            theta_e : ângulo de equilíbrio entre horizonte e direção de voo (deg)
+        '''
 
         self.S = S                          # área da asa (m^2)
         self.b = b                          # envergadura da asa (m)
@@ -20,7 +32,10 @@ class Dinamica_LateroDirecional:
 
         return
 
-    def matriz_A (self, Yv, Lv, Nv, Yp, Lp, Np, Yr, Lr, Nr):
+    def matriz_A (self, Yv:float, Lv:float, Nv:float, Yp:float, Lp:float, Np:float, Yr:float, Lr:float, Nr:float):
+        '''
+        Calcula a matriz de estabilidade A (COOK et. al, 2013) utilizando as derivadas adimensionais
+        '''
 
         a1 = self.Ix*self.Iz - (self.Ixz**2)   # simplificação
         g = 9.81    # gravidade
@@ -38,9 +53,12 @@ class Dinamica_LateroDirecional:
             [0, 0, 1, 0, 0]
         ])
 
-        return
+        return self.A
 
-    def matriz_B (self, Ye, Le, Ne, Yc, Lc, Nc):
+    def matriz_B (self, Ye:float, Le:float, Ne:float, Yc:float, Lc:float, Nc:float):
+        '''
+        Calcula a matriz de controle B (COOK et. al, 2013) utilizando as derivadas adimensionais
+        '''
 
         a1 = self.Ix*self.Iz - (self.Ixz**2)   # simplificação
 
@@ -53,7 +71,7 @@ class Dinamica_LateroDirecional:
             [0, 0]
         ])
 
-        return
+        return self.B
     
     def matriz_G (self):
         I = np.eye(self.A.size)
@@ -109,7 +127,7 @@ if __name__ == "__main__":
         'c': -0.0741
     }
 
-    ld.matriz_A (Y['v'], L['v'], N['v'], Y['p'], L['p'], N['p'], Y['r'], L['r'], N['r'])
-    ld.matriz_B (Y['e'], L['e'], N['e'], Y['c'], L['c'], N['c'])
+    A = ld.matriz_A (Y['v'], L['v'], N['v'], Y['p'], L['p'], N['p'], Y['r'], L['r'], N['r'])
+    B = ld.matriz_B (Y['e'], L['e'], N['e'], Y['c'], L['c'], N['c'])
 
-    print(f"{ld.A}\n{ld.B}")
+    print(f"{A}\n{B}")
