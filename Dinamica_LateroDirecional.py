@@ -1,8 +1,7 @@
 import numpy as np
-import scipy
+from scipy import signal
 from math import sin, cos, radians, sqrt
 import matplotlib.pyplot as plt
-import scipy.signal
 
 class Dinamica_LateroDirecional:
     def __init__(self, m:float, Ix:float, Iz:float, Ixz:float, ro:float, V0:float, S:float, b:float, theta_e:float):
@@ -232,23 +231,28 @@ class Dinamica_LateroDirecional:
         return self.wd_ap, self.cd_ap
     
     def step(self):
+        '''
+        Apresenta o gráfico para a resposta em step do sistema
+        '''
         
-        fig, ax = plt.subplots(10)
-        titles = ['v_{\epsilon}', 'v_{\zeta}',
-                  'r_{\epsilon}', 'r_{\zeta}',
-                  'p_{\epsilon}', 'p_{\zeta}',
-                  '\phi_{\epsilon}', '\phi_{\zeta}',
-                  '\psi_{epsilon}', '\psi_{zeta}'
-                  ]
+        fig, ax = plt.subplots(5, 2)
+
+        titles = ['$v_{\epsilon}$', '$v_{\zeta}$',
+                  '$r_{\epsilon}$', '$r_{\zeta}$',
+                  '$p_{\epsilon}$', '$p_{\zeta}$',
+                  '$\phi_{\epsilon}$', '$\phi_{\zeta}$',
+                  '$\psi_{\epsilon}$', '$\psi_{\zeta}$'
+        ]
 
         for i in range(len(self.N)):
 
-            t, y = scipy.signal.step(scipy.signal.lti(self.N[i], self.delta))
-            
-            ax[i].plot(t, y, 'k')
-            ax[i].set(title=titles[i])
+            t, y = signal.step(signal.lti(self.N[i], self.delta))   # step response
 
-            ax[i].set(xlabel = 't(s)', ylabel = 'A')
+            ax[i//2][i%2].plot(t, y, 'k')
+            ax[i//2][i%2].set(xlabel = 't(s)', ylabel=titles[i])
+            ax[i//2][i%2].grid()
+
+        fig.tight_layout()
 
         return
 
