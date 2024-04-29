@@ -251,7 +251,7 @@ class Dinamica_LateroDirecional:
             ax[i//2][i%2].plot(t, y, 'k')
             ax[i//2][i%2].set(xlabel = 't(s)', ylabel=titles[i])
             ax[i//2][i%2].grid()
-
+            
         fig.tight_layout()
 
         return
