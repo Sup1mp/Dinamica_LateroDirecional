@@ -1,5 +1,8 @@
 import numpy as np
+import scipy
 from math import sin, cos, radians, sqrt
+import matplotlib.pyplot as plt
+import scipy.signal
 
 class Dinamica_LateroDirecional:
     def __init__(self, m:float, Ix:float, Iz:float, Ixz:float, ro:float, V0:float, S:float, b:float, theta_e:float):
@@ -75,15 +78,124 @@ class Dinamica_LateroDirecional:
     
     def matriz_G (self):
 
-        # p = [
-        #     1,
-        #     (Yv*(Ix*Iz - Ixz^2) + b*m*(Iz*Lp + Ixz*(Lr + Np) + Ix*Nr))/(m*(Ixz^2 - Ix*Iz)),
-        #     (b*(m*b*(Lr*Np - Lp*Nr) + Lv*(Iz*Yp + Ixz*Yr) + Nv*(Ixz*Yp + Ix*Yr) - Yv*(Iz*Lp + Ixz*Lr + Ixz*Np + Ix*Nr)) + m*(We*(Ixz*Nv + Iz*Lv) - Ue*(Ixz*Lv + Ix*Nv)))/(m*(Ixz^2 - Ix*Iz)),
-        #     (b*(m*(We*(Lr*Nv - Lv*Nr) + Ue*(Lp*Nv - Lv*Np)) + b*(Yv*(Lp*Nr - Lr*Np) + Yr*(Lv*Np - Lp*Nv) + Yp*(Lr*Nv - Lv*Nr))) + g*m*(cos(theta_e)*(Iz*Lv + Ixz*Nv) + sin(theta_e)*(Ixz*Lv + Ix*Nv)))/(m*(Ixz^2 - Ix*Iz)),
-        #     (b*g*(cos(theta_e)*(Lr*Nv - Lv*Nr) + sin(theta_e)*(Lv*Np - Lp*Nv)))/(Ixz^2 - Ix*Iz)
-        # ]
+        yv = self.A[0,0]
+        yp = self.A[0,1]
+        yr = self.A[0,2]
+        yphi = self.A[0,3]
+        ypsi = self.A[0,4]
 
-        return
+        lv = self.A[1,0]
+        lp = self.A[1,1]
+        lr = self.A[1,2]
+
+        nv = self.A[2,0]
+        npp = self.A[2,1]
+        nr = self.A[2,2]
+
+        ye = self.B[0,0]
+        yc = self.B[0,1]
+
+        le = self.B[1,0]
+        lc = self.B[1,1]
+
+        ne = self.B[2,0]
+        nc = self.B[2,1]
+
+        self.delta = np.array([
+            1,
+            -(lp + nr + yv),
+            (lp*nr - lr*npp) + (nr*yv - nv*yr) + (lp*yv - lv*yp),
+            lv*(nr*yp - npp*yr - yphi) + nv*(lp*yr - lr*yp - ypsi) + yv*(lr*npp - lp*nr),
+            lv*(nr*yphi - npp*ypsi) + nv*(lp*ypsi - lr*yphi),
+            0
+        ])
+
+        Nv_e = np.array([
+            ye,
+            le*yp + ne*yr - ye*(lp + nr),
+            le*(npp*yr - nr*yp + yphi) + ne*(lr*yp - lp*yr + ypsi) + ye*(lp*nr - lr*npp),
+            le*(npp*ypsi - nr*yphi) + ne*(lr*yphi - lp*ypsi),
+            0
+        ])
+
+        Nv_c = np.array([
+            yc,
+            lc*yp + nc*yr - yc*(lp + nr),
+            lc*(npp*yr - nr*yp + yphi) + nc*(lr*yp - lp*yr + ypsi) + yc*(lp*nr - lr*npp),
+            lc*(npp*ypsi - nr*yphi) + nc*(lr*yphi - lp*ypsi),
+            0
+        ])
+
+        Np_e = np.array([
+            le,
+            -le*(nr + yv) + ne*lr + ye*lv,
+            le*(nr*yv - nv*yr) + ne*(lv*yr - lr*yv) + ye*(lr*nv - lv*nr),
+            -le*nv*ypsi + ne*lv*ypsi,
+            0
+        ])
+
+        Np_c = np.array([
+            lc,
+            -lc*(nr + yv) + nc*lr + yc*lv,
+            lc*(nr*yv - nv*yr) + nc*(lv*yr - lr*yv) + yc*(lr*nv - lv*nr),
+            -lc*nv*ypsi + nc*lv*ypsi,
+            0
+        ])
+
+        Nphi_e = np.array([
+            le,
+            -le*(nr + yv) + ne*lr + yc*lv,
+            le*(nr*yv - nv*yr) + ne*(lv*yr - lr*yv) + yc*(lr*nv - lv*nr),
+            -le*nv*ypsi + ne*lv*ypsi
+        ])
+
+        Nphi_c = np.array([
+            lc,
+            -lc*(nr + yv) + nc*lr + yc*lv,
+            lc*(nr*yv - nv*yr) + nc*(lv*yr - lr*yv) + yc*(lr*nv - lv*nr),
+            -lc*nv*ypsi + nc*lv*ypsi
+        ])
+
+        Nr_e = np.array([
+            ne,
+            le*npp - ne*(lp + yv) + ye*nv,
+            le*(nv*yp - npp*yv) + ne*(lp*yv - lv*yp) + ye*(lv*npp - lp*nv),
+            le*nv*yphi - ne*lv*yphi,
+            0
+        ])
+
+        Nr_c = np.array([
+            nc,
+            lc*npp - nc*(lp + yv) + yc*nv,
+            lc*(nv*yp - npp*yv) + nc*(lp*yv - lv*yp) + yc*(lv*npp - lp*nv),
+            lc*nv*yphi - nc*lv*yphi,
+            0
+        ])
+
+        Npsi_e = np.array([
+            ne,
+            le*npp - ne*(lp + yv) + ye*nv,
+            le*(nv*yp - npp*yv) + ne*(lp*yv - lv*yp) + ye*(lv*npp - lp*nv),
+            le*nv*yphi - ne*lv*yphi
+        ])
+
+        Npsi_c = np.array([
+            nc,
+            lc*npp - nc*(lp + yv) + yc*nv,
+            lc*(nv*yp - npp*yv) + nc*(lp*yv - lv*yp) + yc*(lv*npp - lp*nv),
+            lc*nv*yphi - nc*lv*yphi
+        ])
+
+        self.N = [
+            Nv_e, Nv_c,
+            Np_e, Np_c,
+            Nr_e, Nr_c,
+            Nphi_e, Nphi_c,
+            Npsi_e, Npsi_c
+        ]
+
+
+        return self.delta, self.N
     
     def aprox_Tr (self, Ix_d, Lp_d):
         '''
@@ -118,6 +230,27 @@ class Dinamica_LateroDirecional:
         self.cd_ap = -(Nr_d/Iz_d + Yv_d/m_d)/(2*self.wd_ap)     # frequencia de amortecimento zeta_d
 
         return self.wd_ap, self.cd_ap
+    
+    def step(self):
+        
+        fig, ax = plt.subplots(10)
+        titles = ['v_{\epsilon}', 'v_{\zeta}',
+                  'r_{\epsilon}', 'r_{\zeta}',
+                  'p_{\epsilon}', 'p_{\zeta}',
+                  '\phi_{\epsilon}', '\phi_{\zeta}',
+                  '\psi_{epsilon}', '\psi_{zeta}'
+                  ]
+
+        for i in range(len(self.N)):
+
+            t, y = scipy.signal.step(scipy.signal.lti(self.N[i], self.delta))
+            
+            ax[i].plot(t, y, 'k')
+            ax[i].set(title=titles[i])
+
+            ax[i].set(xlabel = 't(s)', ylabel = 'A')
+
+        return
 
 if __name__ == "__main__":
     # Derivadas do McDonnell F-4C Phantom, body axes reference
@@ -162,4 +295,12 @@ if __name__ == "__main__":
     A = ld.matriz_A (Y['v'], L['v'], N['v'], Y['p'], L['p'], N['p'], Y['r'], L['r'], N['r'])
     B = ld.matriz_B (Y['e'], L['e'], N['e'], Y['c'], L['c'], N['c'])
 
-    print(f"{A}\n{B}")
+    # print(f"{A}\n\n{B}")
+
+    delta, N = ld.matriz_G()
+
+    # print(f'\n{delta}\n\n{N}')
+
+    ld.step()
+
+    plt.show()
