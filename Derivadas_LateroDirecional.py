@@ -3,11 +3,16 @@ from math import tan
 from Aeronave import Wing, Finn
 
 class Derivadas_LateroDirecional:
-    def __init__(self, Asa:Wing, Empenagem:Finn):
-
+    def __init__(self, Asa:Wing, EV:Finn):
+        '''
+        Classe das derivadas dinâmicas latero-direcionais obtidas do COOK et. al (2013)
+            Asa : asa da aeronave
+            EV : empenagem vertical da aeronave
+        '''
         self.w = Asa
-        self.f = Empenagem
-        self.f.vol_cauda(self.w.S, self.w.b)
+        self.f = EV
+
+        self.f.vol_cauda(self.w.S, self.w.b)    # garante que o volume de cauda vertical foi calculado
 
         return
 
@@ -23,8 +28,10 @@ class Derivadas_LateroDirecional:
                       H_F,
                       y_B,
                       lambda_1_4
-                      ):
-
+        ):
+        '''
+        Calcula as derivadas adimensionais de estabilidade presentes no apêndice 8 do livro
+        '''
         def Lv_int1 (y):
             return cy * ay * self.T * y
         
@@ -46,20 +53,23 @@ class Derivadas_LateroDirecional:
         def Nr_int (y):
             return CDy*cy*y**2
 
-        s = self.w.b/2
+        s = self.w.b/2  # pra facilitar
 
+        # derivadas de "v"
         self.Yv = (self.S_B*y_B - self.f.S*a1_F)/self.w.S
 
         self.Lv = -quad(Lv_int1, 0, s)[0]/(self.w.S * s) - 2*self.w.CL*tan(lambda_1_4)*quad(Lv_int2, 0, s)[0]/(self.w.S *s) - a1_F * self.f.Vc * (self.f.h/self.f.l)
 
         self.Nv = a1_F * self.f.Vc
 
+        # derivadas de "p"
         self.Yp = -quad(Yp_int, 0, H_F)[0]/(self.w.S * self.w.b)
 
         self.Lp =  -quad(Lp_int, 0, s)[0]/(2*self.w.S*s**2)
 
         self.Np = -quad(Np_int, 0, s)[0]/(2*self.w.S*s**2)
 
+        # derivadas de "r"
         self.Yr = self.f.Vc*a1_F
 
         self.Lr = quad(Lr_int, 0, s)[0]/(self.w.S*s**2) + a1_F*self.f.Vc*(self.f.h/self.w.b)
@@ -75,22 +85,26 @@ class Derivadas_LateroDirecional:
                   a2_R,
                   y1,
                   y2
-                  ):
-
+        ):
+        '''
+        Calcula as derivadas adimensionais de controle presentes no apêndice 8 do livro
+        '''
         def Le_int (y):
             return cy*y
         
         def Ne_int (y):
             return dCDy_de*cy*y
         
-        s = self.w.b/2
+        s = self.w.b/2  # pra facilitar
 
+        # derivadas de "e"
         self.Ye = 0
 
         self.Le = -a2_A * quad(Le_int, y1, y2)[0]/(self.w.S*s)
 
         self.Ne = quad(Ne_int, y1, y2)[0]/(self.w.S*s)
 
+        # derivadas de "c"
         self.Yc = self.f.S/a2_R
 
         self.Lc = self.f.Vc*a2_R*(self.f.h/self.f.l)

@@ -19,9 +19,10 @@ theta_e = 9.4   # graus
 asa = Wing(S, b, 1, 1, [1, 1])
 ev = Finn(1, 1, 1, 1, [1,1], 1, 1, 1)
 
-aviao = Aircraft(m, Ix, Ixz, Iz, V0, ro, theta_e, asa, ev)
+aviao = Aircraft(m, Ix, Ixz, Iz, V0, theta_e)
+aviao.ad_mass(ro, asa.S, asa.b)
 
-ld = Dinamica_LateroDirecional(aviao)
+ld = Dinamica_LateroDirecional(aviao, asa, ev)
 
 # derivadas
 Y = {

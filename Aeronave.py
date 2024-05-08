@@ -16,9 +16,9 @@ class Wing:
         self.inc = math.radians(inc)
         self.c12 = c12
 
-        self.CA = self.mac/4                        # posição do centro aerodinamico
-        self.AR = self.mac * self.b / (self.S**2)   # alongamento
-        self.lbd = self.c12[1] / self.c12[0]         # afilamento
+        self.CA = self.mac/4                            # posição do centro aerodinamico
+        self.AR = self.mac * self.b / (self.S**2)       # alongamento
+        self.lbd = self.c12[1] / self.c12[0]            # afilamento
 
         return
 
@@ -111,41 +111,42 @@ class Aircraft:
                  Ixz : float,
                  Iz : float,
                  V0 : float,
-                 ro : float,
-                 theta_e : float,
-                 Asa : Wing,
-                 EV : Finn,
-                 # EH : Tail
+                 theta_e : float
         ):
         '''
         Aeronave:
             m : massa (kg)
             Ix : momento de inércia Ix eixo aeronautico (kg*m^2)
-            Iz : momento de inércia Iz eixo aeronautico(kg*m^2)
-            Ixz : momento de inércia Ixz eixo aeronautico(kg*m^2)
+            Iz : momento de inércia Iz eixo aeronautico (kg*m^2)
+            Ixz : momento de inércia Ixz eixo aeronautico (kg*m^2)
             ro : densidade do ar (kg/m^3)
             V0 : velocidade da aeronave (m/s)
             theta_e : ângulo de equilíbrio entre horizonte e direção de voo (deg)
         '''
         self.m = m
+        self.Ix = Ix
+        self.Ixz = Ixz
+        self.Iz = Iz
+
         self.V0 = V0
         self.theta_e = math.radians(theta_e)
 
-        self.w = Asa
-        self.f = EV
-        # self.t = EH
-
-        self.f.vol_cauda(self.w.S, self.w.b)
-        # self.t.vol_cauda(self.w.S, self.w.b)
+    def ad_mass (self, ro, Sw, bw):
+        '''
+        Admensionaliza a massa e os momentos de inércia em relação á asa:
+            ro : densidade do ar (kg/m^3)
+            Sw : área da asa (m^2)
+            bw : envergadura da asa (m)
+        '''
 
         # adimensionalizadores
-        ad1 = 0.5*ro*V0*Asa.S
-        ad2 = ad1*Asa.b
+        ad1 = 0.5*ro*self.V0*Sw
+        ad2 = ad1*bw
 
-        self.m = m/ad1                      # massa adimensional
-        self.Ix = Ix/ad2                    # momento de inercia Ix adimensional
-        self.Iz = Iz/ad2                    # momento de inercia Iz adimensional
-        self.Ixz = Ixz/ad2                  # momento de inercia Ixz adimensional
+        self.m1 = self.m/ad1                      # massa adimensional
+        self.Ix1 = self.Ix/ad2                    # momento de inercia Ix adimensional
+        self.Iz1 = self.Iz/ad2                    # momento de inercia Iz adimensional
+        self.Ixz1 = self.Ixz/ad2                  # momento de inercia Ixz adimensional
         
         return
 #=======================================================================================================

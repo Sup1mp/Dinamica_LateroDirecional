@@ -6,33 +6,37 @@ import matplotlib.pyplot as plt
 from Aeronave import Aircraft, Finn, Wing
 
 class Dinamica_LateroDirecional:
-    def __init__ (self, Aviao : Aircraft):
+    def __init__ (self, Aviao : Aircraft, Asa : Wing, EV : Finn):
         '''
-        Classe da Dinâmica Latero-Direcional de aeronaves
+        Classe da Dinâmica Latero-Direcional de aeronaves que utiliza as equações e métodos presentes no COOK et. al (2013)
+            Avião : aeronave
+            Asa : asa da aeronave
+            EV : empenagem vertical da aeronave
         '''
         self.a = Aviao
-        self.w = Aviao.w
-        self.f = Aviao.f
+        self.w = Asa
+        self.f = EV
 
         return
 
     def matriz_A (self, Yv:float, Lv:float, Nv:float, Yp:float, Lp:float, Np:float, Yr:float, Lr:float, Nr:float):
         '''
-        Calcula a matriz de estabilidade A (COOK et. al, 2013) utilizando as derivadas adimensionais
+        Calcula a matriz de estabilidade "A" utilizando as derivadas adimensionais
+        Yv, Lv, Nv, Yp, Lp, Np, Yr, Lr, Nr do apêndice 8 do mesmo livro 
         '''
 
-        a1 = self.a.Ix*self.a.Iz - (self.a.Ixz**2)   # simplificação
+        a1 = self.a.Ix1*self.a.Iz1 - (self.a.Ixz1**2)   # pra facilitar
         g = 9.81    # gravidade
 
-        # voo reto e simétrico
+        # voo reto e simétrico permite essa simplificação
         Ue = self.a.V0*cos(self.a.theta_e)
         We = self.a.V0*sin(self.a.theta_e)
 
         # matriz de estabilidade
         self.A = np.array([
-            [Yv/self.a.m, (Yp*self.w.b + self.a.m*We)/self.a.m, (Yr*self.w.b - self.a.m*Ue)/self.a.m, g*cos(self.a.theta_e), g*sin(self.a.theta_e)],
-            [(self.a.Ixz*Nv + self.a.Iz*Lv)/a1, (self.a.Ixz*Np + self.a.Iz*Lp)*self.w.b/a1, (self.a.Ixz*Nr + self.a.Iz*Lr)*self.w.b/a1, 0, 0],
-            [(self.a.Ix*Nv + self.a.Ixz*Lv)/a1, (self.a.Ix*Np + self.a.Ixz*Lp)*self.w.b/a1, (self.a.Ix*Nr + self.a.Ixz*Lr)*self.w.b/a1, 0, 0],
+            [Yv/self.a.m1, (Yp*self.w.b + self.a.m1*We)/self.a.m1, (Yr*self.w.b - self.a.m1*Ue)/self.a.m1, g*cos(self.a.theta_e), g*sin(self.a.theta_e)],
+            [(self.a.Ixz1*Nv + self.a.Iz1*Lv)/a1, (self.a.Ixz1*Np + self.a.Iz1*Lp)*self.w.b/a1, (self.a.Ixz1*Nr + self.a.Iz1*Lr)*self.w.b/a1, 0, 0],
+            [(self.a.Ix1*Nv + self.a.Ixz1*Lv)/a1, (self.a.Ix1*Np + self.a.Ixz1*Lp)*self.w.b/a1, (self.a.Ix1*Nr + self.a.Ixz1*Lr)*self.w.b/a1, 0, 0],
             [0, 1, 0, 0, 0],
             [0, 0, 1, 0, 0]
         ])
@@ -41,16 +45,19 @@ class Dinamica_LateroDirecional:
 
     def matriz_B (self, Ye:float, Le:float, Ne:float, Yc:float, Lc:float, Nc:float):
         '''
-        Calcula a matriz de controle B (COOK et. al, 2013) utilizando as derivadas adimensionais
+        Calcula a matriz de controle "B" utilizando as derivadas adimensionais
+        Ye, Le, Ne, Yc, Lc, Nc do apêndice 8 do mesmo livro, onde as letras gregas são
+            e : epsilon
+            c : zeta
         '''
 
-        a1 = self.a.Ix*self.a.Iz - (self.a.Ixz**2)   # simplificação
+        a1 = self.a.Ix1*self.a.Iz1 - (self.a.Ixz1**2)   # pra facilitar
 
         # matriz de controle
         self.B = self.a.V0 * np.array([
-            [Ye/self.a.m, Yc/self.a.m],
-            [(self.a.Ixz*Ne + self.a.Iz*Le)/a1, (self.a.Ixz*Nc + self.a.Iz*Lc)/a1],
-            [(self.a.Ix*Ne + self.a.Ixz*Le)/a1, (self.a.Ix*Nc + self.a.Ixz*Lc)/a1],
+            [Ye/self.a.m1, Yc/self.a.m1],
+            [(self.a.Ixz1*Ne + self.a.Iz1*Le)/a1, (self.a.Ixz1*Nc + self.a.Iz1*Lc)/a1],
+            [(self.a.Ix1*Ne + self.a.Ixz1*Le)/a1, (self.a.Ix1*Nc + self.a.Ixz1*Lc)/a1],
             [0, 0],
             [0, 0]
         ])
@@ -58,6 +65,10 @@ class Dinamica_LateroDirecional:
         return self.B
     
     def matriz_G (self):
+        '''
+        Retorna a equação caracteristica (delta) e a matriz de polinomios (N) para cada variavel utilizando
+        as equações 
+        '''
 
         yv = self.A[0,0]
         yp = self.A[0,1]
@@ -183,7 +194,7 @@ class Dinamica_LateroDirecional:
     def aprox_Tr (self, Ix_d, Lp_d):
         '''
         Retorna a constante de tempo Tr do Roll Mode aproximada
-            Ix_d : momento de inércia a.Ix eixo aeronautico (kg*m^2)
+            Ix_d : momento de inércia Ix eixo aeronautico (kg*m^2)
             Lp_d : derivada dimensional Lp
         '''
         self.Tr_ap = -Ix_d/Lp_d
@@ -193,7 +204,7 @@ class Dinamica_LateroDirecional:
     def aprox_Ts (self, V0, Lv, Nv, Lp, Np, Lr, Nr):
         '''
         Retorna a constante de tempo Ts do Spiral Mode aproximada
-            a.V0 : velocidade da aeronave (m/s)
+            V0 : velocidade da aeronave (m/s)
         '''
         self.Ts_ap = -V0/9.81 * (Lv*Np - Lp*Nv)/(Lr*Nv - Lv*Nr)
 
@@ -202,14 +213,14 @@ class Dinamica_LateroDirecional:
     def aprox_freq (self, Iz_d, m_d, Yv_d, Nv_d, Nr_d):
         '''
         Retorna as frequências naturais omega_d e de amortecimento zeta_d aproximadas para o Dutch Roll
-            Iz_d : momento de inércia a.Iz eixo aeronautico (kg*m^2)
+            Iz_d : momento de inércia Iz eixo aeronautico (kg*m^2)
             m_d : massa da aeronave (kg)
             Yv_d : derivada dimensional Yv
             Nv_d : derivada dimensional Nv
             Nr_d : derivada dimensional Nr
         '''
 
-        self.wd_ap = sqrt(self.a.V0*Nv_d/Iz_d)                         # frequencia natural omega_d
+        self.wd_ap = sqrt(self.a.V0*Nv_d/Iz_d)                  # frequencia natural omega_d
         self.cd_ap = -(Nr_d/Iz_d + Yv_d/m_d)/(2*self.wd_ap)     # frequencia de amortecimento zeta_d
 
         return self.wd_ap, self.cd_ap
@@ -221,6 +232,7 @@ class Dinamica_LateroDirecional:
         
         fig, ax = plt.subplots(5, 2)
 
+        # organização dos titulos na ordem em que aparecem
         titles = ['$v_{\epsilon}$', '$v_{\zeta}$',
                   '$r_{\epsilon}$', '$r_{\zeta}$',
                   '$p_{\epsilon}$', '$p_{\zeta}$',
@@ -232,11 +244,12 @@ class Dinamica_LateroDirecional:
 
             t, y = signal.step(signal.lti(self.N[i], self.delta))   # step response
 
+            # coloca as legendas e o nome de cada gráfico
             ax[i//2][i%2].plot(t, y, 'k')
-            ax[i//2][i%2].set(xlabel = 't(s)', ylabel=titles[i])
+            ax[i//2][i%2].set(title=titles[i])
             ax[i//2][i%2].grid()
-            
-        fig.tight_layout()
+        
+        fig.tight_layout()  # ajusta o tamanho
 
         return
 
