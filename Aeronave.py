@@ -1,13 +1,13 @@
 import math
 
 class Wing:
-    def __init__(self, S:float, b:float, mac:float, inc:float, c12:list):
+    def __init__(self, S: float, b: float, mac: float, inc: float, c12: list):
         '''
         Wing object, parâmetros geométricos:
-            S : área
-            b : envergadura
-            mac : corda média aerodinamica
-            inc : incidência (deg)
+            S : área (m^2)
+            b : envergadura (m)
+            mac : corda média aerodinamica (m)
+            inc : ângulo de incidência (deg)
             c12 : cordas na raiz e na ponta [raiz, ponta]
         '''
         self. S = S
@@ -35,23 +35,28 @@ class Wing:
 
         return
 
-    def angulos (self, T, V):
+    def angulos (self, T: float, V: float):
         '''
         Ângulos:
-            T : ang diedro
-            V : ang enflexamento
+            T : ang diedro (deg)
+            V : ang enflexamento (deg)
         '''
-        self.T = T      # angulo de diedro
-        self.V = V      # angulo de enflexamento
+        self.T = math.radians(T)    # angulo de diedro
+        self.V = math.radians(V)    # angulo de enflexamento
 
         return
 #=======================================================================================================
 class Empennage (Wing):
-    def __init__(self, S, b, mac, inc, c12: list, l, h):
+    def __init__(self, S: float, b: float, mac: float, inc: float, c12: list, l: float, h: float):
         '''
         Empennage object, parâmetros geométricos:
-            l : distância do CG até o CA da empenagem em x
-            h : distância do CG até o CA da empenagem em z
+            S : área (m^2)
+            b : envergadura (m)
+            mac : corda média aerodinamica (m)
+            inc : ângulo de incidência (deg)
+            c12 : cordas na raiz e na ponta [raiz, ponta]
+            l : distância do CG até o CA da empenagem em x (m)
+            h : distância do CG até o CA da empenagem em z (m)
         '''
         super().__init__(S, b, mac, inc, c12)
 
@@ -60,27 +65,27 @@ class Empennage (Wing):
 
         return
     
-    def vol_cauda (self, Sw, bw):
+    def vol_cauda (self, Sw: float, bw: float):
         '''
         Calcula o Volume de Cauda Vc da empenagem:
-            Sw : área da asa
-            bw : envergadura da asa
+            Sw : área da asa (m)
+            bw : envergadura da asa (m)
         '''
         self.Vc = self.l * self.S / (Sw * bw)
 
         return
 #=======================================================================================================
 class Finn(Empennage):
-    def __init__(self, S, b, mac, inc, c12: list, l, h, k):
+    def __init__(self, S: float, b: float, mac: float, inc: float, c12: list, l: float, h: float, k: int):
         '''
         Empenagem Vertical, parâmetros geométricos:
-            S : área
-            b : envergadura
-            mac : corda média aerodinamica
-            inc : incidência (deg)
+            S : área (m^2)
+            b : envergadura (m)
+            mac : corda média aerodinamica (m)
+            inc : ângulo de incidência (deg)
             c12 : cordas na raiz e na ponta [raiz, ponta]
-            l : distância do CG até o CA da empenagem em x
-            h : distância do CG até o CA da empenagem em z
+            l : distância do CG até o CA da empenagem em x (m)
+            h : distância do CG até o CA da empenagem em z (m)
             k : quantidade de EV's
         '''
         super().__init__(S, b, mac, inc, c12, l, h)
@@ -90,29 +95,22 @@ class Finn(Empennage):
         return
 #=======================================================================================================
 class Tail (Empennage):
-    def __init__(self, S, b, mac, inc, c12: list, l, h):
+    def __init__(self, S: float, b: float, mac: float, inc: float, c12: list, l: float, h: float):
         '''
         Empenagem Horizontal, parâmetros geométricos:
-            S : área
-            b : envergadura
-            mac : corda média aerodinamica
-            inc : incidência (deg)
+            S : área (m^2)
+            b : envergadura (m)
+            mac : corda média aerodinamica (m)
+            inc : ângulo de incidência (deg)
             c12 : cordas na raiz e na ponta [raiz, ponta]
-            l : distância do CG até o CA da empenagem em x
-            h : distância do CG até o CA da empenagem em z
+            l : distância do CG até o CA da empenagem em x (m)
+            h : distância do CG até o CA da empenagem em z (m)
         '''
         super().__init__(S, b, mac, inc, c12, l, h)
         return
 #=======================================================================================================
 class Aircraft:
-    def __init__(self,
-                 m : float,
-                 Ix : float,
-                 Ixz : float,
-                 Iz : float,
-                 V0 : float,
-                 theta_e : float
-        ):
+    def __init__(self, m: float, Ix: float, Ixz: float, Iz: float, V0: float, theta_e: float):
         '''
         Aeronave:
             m : massa (kg)
@@ -131,7 +129,7 @@ class Aircraft:
         self.V0 = V0
         self.theta_e = math.radians(theta_e)
 
-    def ad_mass (self, ro, Sw, bw):
+    def ad_mass (self, ro: float, Sw: float, bw: float):
         '''
         Admensionaliza a massa e os momentos de inércia em relação á asa:
             ro : densidade do ar (kg/m^3)

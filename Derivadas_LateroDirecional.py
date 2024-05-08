@@ -31,6 +31,7 @@ class Derivadas_LateroDirecional:
         ):
         '''
         Calcula as derivadas adimensionais de estabilidade presentes no apêndice 8 do livro
+            
         '''
         def Lv_int1 (y):
             return cy * ay * self.T * y

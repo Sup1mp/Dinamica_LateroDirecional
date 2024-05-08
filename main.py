@@ -2,7 +2,7 @@ from Dinamica_LateroDirecional import Dinamica_LateroDirecional
 from Aeronave import Aircraft, Finn, Wing
 import matplotlib.pyplot as plt
 
-# Derivadas do McDonnell F-4C Phantom, body axes reference
+# modelagem do McDonnell F-4C Phantom, body axes reference (exemplo do COOK)
 ro = 0.3809     # densidade do ar kg/m^3
 
 m = 17642       # kg
