@@ -1,37 +1,58 @@
 import math
 
-class Wing:
-    def __init__(self, S: float, b: float, mac: float, inc: float, c12: list):
+def Tau (S_super, S_control):
+    '''
+    Retorna o valor do parâmetros TAU para superfícies de controle
+        S_super : área total da empenagem
+        S_control : área da superficie de controle (leme ou profundor)
+    '''
+    x = S_control / S_super
+
+    # equação da figura 2.20 do NELSON
+    return 12.267*(x**5) - 25.8*(x**4) + 21.477*(x**3) - 9.6446*(x**2) + 3.26*x + 0.01
+
+#=======================================================================================================
+class AeroSurface:
+    def __init__(self, S: float, b: float, mac: float, inc: float, c12: list = None):
         '''
-        Wing object, parâmetros geométricos:
+        Surface object, parâmetros geométricos:
             S : área (m^2)
             b : envergadura (m)
             mac : corda média aerodinamica (m)
             inc : ângulo de incidência (deg)
             c12 : cordas na raiz e na ponta [raiz, ponta]
         '''
-        self. S = S
+        self.S = S
         self.b = b
         self.mac = mac
         self.inc = math.radians(inc)
-        self.c12 = c12
+        self.c12 = c12 if c12 != None else [mac, mac]
 
-        self.CA = self.mac/4                            # posição do centro aerodinamico
+        self.x_CA = self.mac/4                          # posição do centro aerodinamico
         self.AR = self.mac * self.b / (self.S**2)       # alongamento
         self.lbd = self.c12[1] / self.c12[0]            # afilamento
 
         return
-
-    def coefs (self, CL, CD, Cma):
+    
+    def set_CL (self, CL0, CLa):
         '''
         Coeficientes aerodinâmicos:
-            CL : coef sustentação
-            CD : coef arrasto
-            Cma : coef de momento entorno do centro aerodinamico
+            CLa : derivada do coef sustentação em relação a alpha
+            CL0 : coef sustentação em alpha = 0
         '''
-        self.CD = CD
-        self.CL = CL
-        self.Cma = Cma
+        self.CLa = CLa
+        self.CL0 = CL0
+
+        return
+    
+    def set_CD (self, CD0, CDa):
+        '''
+        Coeficientes aerodinâmicos:
+            CDa : derivada do coef de arrasto em relação a alpha
+            CD0 : coef de arrasto em alpha = 0
+        '''
+        self.CDa = CDa
+        self.CD0 = CD0
 
         return
 
@@ -46,7 +67,7 @@ class Wing:
 
         return
 #=======================================================================================================
-class Empennage (Wing):
+class Empennage (AeroSurface):
     def __init__(self, S: float, b: float, mac: float, inc: float, c12: list, l: float, h: float):
         '''
         Empennage object, parâmetros geométricos:
@@ -75,6 +96,39 @@ class Empennage (Wing):
 
         return
 #=======================================================================================================
+class Wing(AeroSurface):
+    def __init__(self, S: float, b: float, mac: float, inc: float, Cm_CA: float, c12: list = None):
+        '''
+        Surface object, parâmetros geométricos:
+            S : área (m^2)
+            b : envergadura (m)
+            mac : corda média aerodinamica (m)
+            inc : ângulo de incidência (deg)
+            c12 : cordas na raiz e na ponta [raiz, ponta]
+            Cm_CA : coef de momento em torno do CA
+        '''
+        super().__init__(S, b, mac, inc, c12)
+
+        self.Cm_CA = Cm_CA
+
+        return
+    
+    def Cm_0 (self, x_CG):
+        '''
+        Retorna a contribuição da asa para o coeficiente de momento para alpha = 0
+        '''
+        self.Cm0 = self.Cm_CA + (x_CG - self.x_CA)/self.mac * (self.CL0 + self.CLa*self.inc)
+
+        return self.Cm0
+    
+    def Cm_a (self, x_CG):
+        '''
+        Retorna a contribuição da asa para o coeficiente de momento em funçãod e alpha
+        '''
+        self.Cma = self.CLa * (x_CG - self.x_CA)/self.mac
+
+        return self.Cma
+#=======================================================================================================
 class Finn(Empennage):
     def __init__(self, S: float, b: float, mac: float, inc: float, c12: list, l: float, h: float, k: int):
         '''
@@ -93,6 +147,38 @@ class Finn(Empennage):
         self.k = k
         
         return
+    
+    def Cl_b (self):
+        '''
+        Retorna a contribuição da EV para o coeficiente de momento lateral em função de beta (sideslip)
+        Depende do Volume de cauda Vc e do coef CL alpha
+        '''
+        self.Clb = - self.Vc * self.CLa * self.h / self.l
+        # equação 3.39 do COOK
+
+        return self.Clb
+    
+    def Cn_b (self, kn, krl, Vf, ETA):
+        '''
+        Retorna o coeficiente de momento angular de guinada
+            kn : fator empírico de interferência asa-fuselagem, função direta da  geometria da fuselagem
+            krl : fator empírico do numero de Reynolds  da fuselagem
+            Vf : "volume de cauda fuselagem" 
+        '''
+        self.Cnb = - kn * krl * Vf + self.Vc * self.CLa * ETA
+        # equação 5.91 TAPERA
+
+        return self.Cnb
+    
+    def Cn_dr (self, ETA, S_rudder):
+        '''
+        Retorna o coeficiente de momento direcional do leme em função da deflexão delta
+            ETA : eficiencia de cauda
+            S_rudder : área total do leme
+        '''
+        self.Cndr = - self.k * ETA * self.Vc * self.CLa * Tau(self.S, S_rudder)
+
+        return self.Cndr
 #=======================================================================================================
 class Tail (Empennage):
     def __init__(self, S: float, b: float, mac: float, inc: float, c12: list, l: float, h: float):
@@ -108,6 +194,32 @@ class Tail (Empennage):
         '''
         super().__init__(S, b, mac, inc, c12, l, h)
         return
+    
+    def Cm_a (self, ETA, de_da):
+        '''
+        Retorna a contribuição da EH para o coeficiente de momento em função de alpha
+            ETA : eficiencia de cauda
+            de_da : derivada do downwash em função de alpha
+        '''
+        self.Cma = - ETA * self.Vc * self.CLa * (1 - de_da)
+
+        return self.Cma
+    
+    def Cm_0 (self, ETA, e_0):
+        '''
+        Retorna a contribuição da EH para o coeficiente de momento em alpha = 0
+        '''
+        self.Cm0 = - ETA * self.Vc * (self.CL0 + self.CLa * (self.inc - e_0))
+
+        return self.Cm0
+    
+    def Cm_de (self, ETA, S_elevator):
+        '''
+        Retorna o coef de momento do profundor em função da deflexão delta
+        '''
+        self.Cmde = - ETA * Tau(self.S, S_elevator) * self.Vc * self.CLa
+
+        return self.Cmde
 #=======================================================================================================
 class Aircraft:
     def __init__(self, m: float, Ix: float, Ixz: float, Iz: float, V0: float, theta_e: float):
