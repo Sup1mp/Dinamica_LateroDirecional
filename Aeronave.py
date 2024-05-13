@@ -107,9 +107,22 @@ class Elevator (AeroSurface):
 class Aileron (AeroSurface):
     def __init__(self):
         return
+    def set_geometry (self, b, c, y1):
+        '''
+        Define as dimensioes básicas do aileron
+            b : envergadura
+            c : corda
+            y1 : distaância perpendicular do eixo x até o começo do aileron
+        '''
+        self.b = b
+        self.c = c
+        self.y1 = y1
+        self.y2 = y1 + b    # distância perpendicular do eixo x até o final do aileron
+        
+        return
 #=======================================================================================================
 class Wing (AeroSurface):
-    def __init__(self, S: float, b: float, mac: float, inc: float, Cm_CA: float, c12: list = None):
+    def __init__(self, S: float, b: float, mac: float, inc: float, c12: list = None, Cm_CA: float = 0):
         '''
         Surface object, parâmetros geométricos:
             S : área (m^2)
@@ -143,19 +156,20 @@ class Wing (AeroSurface):
         return self.Cma
 #=======================================================================================================
 class Finn(Empennage):
-    def __init__(self, S: float, b: float, mac: float, inc: float, c12: list, l: float, h: float, k: int):
+    def __init__(self, b: float, c12: list, l: float, h: float, S: float = None, k: int = 1):
         '''
         Empenagem Vertical, parâmetros geométricos:
             S : área (m^2)
             b : envergadura (m)
             mac : corda média aerodinamica (m)
-            inc : ângulo de incidência (deg)
             c12 : cordas na raiz e na ponta [raiz, ponta]
             l : distância do CG até o CA da empenagem em x (m)
             h : distância do CG até o CA da empenagem em z (m)
             k : quantidade de EV's
         '''
-        super().__init__(S, b, mac, inc, c12, l, h)
+        S = S if S!= None else (c12[0] + c12[1])*b*k/2  # area de trapézio
+
+        super().__init__(S, b, (c12[0] + c12[1])/2, 0, c12, l, h)
 
         self.k = k
         self.r = Rudder()       # leme

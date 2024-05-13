@@ -91,9 +91,9 @@ class Derivadas_LateroDirecional:
         # derivadas de "e"
         self.Ye = 0
 
-        self.Le = -self.w.a.CLa * quad(Le_int, self.w.a.c12[0], self.w.a.c12[1])[0]/(self.w.S*s)
+        self.Le = -self.w.a.CLa * quad(Le_int, self.w.a.y1, self.w.a.y2)[0]/(self.w.S*s)
 
-        self.Ne = quad(Ne_int, self.w.a.c12[0], self.w.a.c12[1])[0]/(self.w.S*s)
+        self.Ne = quad(Ne_int, self.w.a.y1, self.w.a.y2)[0]/(self.w.S*s)
 
         # derivadas de "c"
         self.Yc = self.f.S/self.f.r.CLa

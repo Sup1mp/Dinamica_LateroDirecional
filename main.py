@@ -16,14 +16,6 @@ b = 11.787      # envergadura da asa m
 V0 = 178        # velocidade m/s
 theta_e = 9.4   # graus
 
-asa = Wing(S, b, 1, 1, [1, 1])
-ev = Finn(1, 1, 1, 1, [1,1], 1, 1, 1)
-
-aviao = Aircraft(m, Ix, Ixz, Iz, V0, theta_e)
-aviao.ad_mass(ro, asa.S, asa.b)
-
-ld = Dinamica_LateroDirecional(aviao, asa, ev)
-
 # derivadas
 Y = {
     'v': -0.5974,
@@ -47,14 +39,18 @@ N = {
     'c': -0.0741
 }
 
+asa = Wing(S, b, 1, 1, [1, 1])
+ev = Finn(1, 1, 1, 1, [1,1], 1, 1, 1)
+
+aviao = Aircraft(m, Ix, Ixz, Iz, V0, theta_e)
+aviao.ad_mass(ro, asa.S, asa.b)
+
+ld = Dinamica_LateroDirecional(aviao, asa, ev)
+
 A = ld.matriz_A (Y['v'], L['v'], N['v'], Y['p'], L['p'], N['p'], Y['r'], L['r'], N['r'])
 B = ld.matriz_B (Y['e'], L['e'], N['e'], Y['c'], L['c'], N['c'])
 
-# print(f"{A}\n\n{B}")
-
 delta, N = ld.matriz_G()
-
-# print(f'\n{delta}\n\n{N}')
 
 ld.step()
 
