@@ -96,7 +96,19 @@ class Empennage (AeroSurface):
 
         return
 #=======================================================================================================
-class Wing(AeroSurface):
+class Rudder (AeroSurface):
+    def __init__(self):
+        return
+#=======================================================================================================
+class Elevator (AeroSurface):
+    def __init__(self):
+        return
+#=======================================================================================================
+class Aileron (AeroSurface):
+    def __init__(self):
+        return
+#=======================================================================================================
+class Wing (AeroSurface):
     def __init__(self, S: float, b: float, mac: float, inc: float, Cm_CA: float, c12: list = None):
         '''
         Surface object, parâmetros geométricos:
@@ -110,6 +122,7 @@ class Wing(AeroSurface):
         super().__init__(S, b, mac, inc, c12)
 
         self.Cm_CA = Cm_CA
+        self.a = Aileron()      # aileron
 
         return
     
@@ -145,6 +158,7 @@ class Finn(Empennage):
         super().__init__(S, b, mac, inc, c12, l, h)
 
         self.k = k
+        self.r = Rudder()       # leme
         
         return
     
@@ -170,13 +184,13 @@ class Finn(Empennage):
 
         return self.Cnb
     
-    def Cn_dr (self, ETA, S_rudder):
+    def Cn_dr (self, ETA):
         '''
         Retorna o coeficiente de momento direcional do leme em função da deflexão delta
             ETA : eficiencia de cauda
             S_rudder : área total do leme
         '''
-        self.Cndr = - self.k * ETA * self.Vc * self.CLa * Tau(self.S, S_rudder)
+        self.Cndr = - self.k * ETA * self.Vc * self.CLa * Tau(self.S, self.r.S)
 
         return self.Cndr
 #=======================================================================================================
@@ -193,6 +207,9 @@ class Tail (Empennage):
             h : distância do CG até o CA da empenagem em z (m)
         '''
         super().__init__(S, b, mac, inc, c12, l, h)
+
+        self.e = Elevator()     # profundor
+
         return
     
     def Cm_a (self, ETA, de_da):
@@ -213,11 +230,11 @@ class Tail (Empennage):
 
         return self.Cm0
     
-    def Cm_de (self, ETA, S_elevator):
+    def Cm_de (self, ETA):
         '''
         Retorna o coef de momento do profundor em função da deflexão delta
         '''
-        self.Cmde = - ETA * Tau(self.S, S_elevator) * self.Vc * self.CLa
+        self.Cmde = - ETA * Tau(self.S, self.e.S) * self.Vc * self.CLa
 
         return self.Cmde
 #=======================================================================================================
