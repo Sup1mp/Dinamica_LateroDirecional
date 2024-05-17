@@ -233,11 +233,11 @@ class Dinamica_LateroDirecional:
         fig, ax = plt.subplots(5, 2)
 
         # organização dos titulos na ordem em que aparecem
-        titles = ['$v_{\epsilon}$', '$v_{\zeta}$',
-                  '$r_{\epsilon}$', '$r_{\zeta}$',
-                  '$p_{\epsilon}$', '$p_{\zeta}$',
-                  '$\phi_{\epsilon}$', '$\phi_{\zeta}$',
-                  '$\psi_{\epsilon}$', '$\psi_{\zeta}$'
+        titles = ['$v_{\epsilon}$ (m/s)', '$v_{\zeta}$ (m/s)',
+                  '$r_{\epsilon}$ (rad/s)', '$r_{\zeta}$ (rad/s)',
+                  '$p_{\epsilon}$ (rad/s)', '$p_{\zeta}$ (rad/s)',
+                  '$\phi_{\epsilon}$ (rad)', '$\phi_{\zeta}$ (rad)',
+                  '$\psi_{\epsilon}$ (rad)', '$\psi_{\zeta}$ (rad)'
         ]
 
         for i in range(len(self.N)):
@@ -246,12 +246,26 @@ class Dinamica_LateroDirecional:
 
             # coloca as legendas e o nome de cada gráfico
             ax[i//2][i%2].plot(t, y, 'k')
-            ax[i//2][i%2].set(title=titles[i])
+            ax[i//2][i%2].set(ylabel=titles[i])
             ax[i//2][i%2].grid()
         
         fig.tight_layout()  # ajusta o tamanho
 
         return
+    
+    def root_map (self):
+
+        r = np.roots(self.delta)
+
+        wd = np.sqrt(r.real**2 + r.imag**2)
+        cd = r.real / wd
+
+        plt.scatter(r.real, r.imag, c = 'k')
+        plt.grid()
+        plt.xlabel('$\sigma$ (rad/s)')
+        plt.ylabel('$j \gamma$ (rad/s)')
+
+        return wd, cd
 
 if __name__ == "__main__":
     import main

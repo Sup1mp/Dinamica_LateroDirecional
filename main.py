@@ -39,8 +39,8 @@ N = {
     'c': -0.0741
 }
 
-asa = Wing(S, b, 1, 1, [1, 1])
-ev = Finn(1, 1, 1, 1, [1,1], 1, 1, 1)
+asa = Wing(S, b, 1, 1)
+ev = Finn(1, [1, 1], 1, 1, 1)
 
 aviao = Aircraft(m, Ix, Ixz, Iz, V0, theta_e)
 aviao.ad_mass(ro, asa.S, asa.b)
@@ -52,6 +52,10 @@ B = ld.matriz_B (Y['e'], L['e'], N['e'], Y['c'], L['c'], N['c'])
 
 delta, N = ld.matriz_G()
 
-ld.step()
+#ld.step()
+
+wd, cd = ld.root_map()
+
+print(f'wd = {wd}\ncd = {cd}')
 
 plt.show()

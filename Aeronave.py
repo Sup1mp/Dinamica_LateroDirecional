@@ -29,7 +29,7 @@ class AeroSurface:
         self.c12 = c12 if c12 != None else [mac, mac]
 
         self.x_CA = self.mac/4                          # posição do centro aerodinamico
-        self.AR = self.mac * self.b / (self.S**2)       # alongamento
+        self.AR = (self.b**2) / self.S                  # alongamento
         self.lbd = self.c12[1] / self.c12[0]            # afilamento
 
         return
@@ -68,7 +68,7 @@ class AeroSurface:
         return
 #=======================================================================================================
 class Empennage (AeroSurface):
-    def __init__(self, S: float, b: float, mac: float, inc: float, c12: list, l: float, h: float):
+    def __init__(self, S: float, b: float, mac: float, inc: float, c12: list, l: float, L: float, h: float):
         '''
         Empennage object, parâmetros geométricos:
             S : área (m^2)
@@ -76,23 +76,15 @@ class Empennage (AeroSurface):
             mac : corda média aerodinamica (m)
             inc : ângulo de incidência (deg)
             c12 : cordas na raiz e na ponta [raiz, ponta]
-            l : distância do CG até o CA da empenagem em x (m)
-            h : distância do CG até o CA da empenagem em z (m)
+            l : distância do CA até o CA da empenagem em x (m)
+            L : distância do CG até o CA da empenagem em x (m)
+            h : distância do eixo x até o CA da empenagem em z (m)
         '''
         super().__init__(S, b, mac, inc, c12)
 
         self.l = l
+        self.L = L
         self.h = h
-
-        return
-    
-    def vol_cauda (self, Sw: float, bw: float):
-        '''
-        Calcula o Volume de Cauda Vc da empenagem:
-            Sw : área da asa (m)
-            bw : envergadura da asa (m)
-        '''
-        self.Vc = self.l * self.S / (Sw * bw)
 
         return
 #=======================================================================================================
@@ -107,6 +99,7 @@ class Elevator (AeroSurface):
 class Aileron (AeroSurface):
     def __init__(self):
         return
+    
     def set_geometry (self, b, c, y1):
         '''
         Define as dimensioes básicas do aileron
@@ -139,6 +132,15 @@ class Wing (AeroSurface):
 
         return
     
+    def downwash (self):
+        '''
+        Calcula a derivada de_da do angulo de downwash por alpha
+        '''
+        self.de_da = 2*self.CLa / (math.pi * self.AR)
+        # equação 2.23 NELSON
+
+        return self.de_da
+    
     def Cm_0 (self, x_CG):
         '''
         Retorna a contribuição da asa para o coeficiente de momento para alpha = 0
@@ -154,26 +156,50 @@ class Wing (AeroSurface):
         self.Cma = self.CLa * (x_CG - self.x_CA)/self.mac
 
         return self.Cma
+    
+    def Cn_b (self, kn, krl, SFs, lF):
+        '''
+        Contribuição da asa para o coeficiente de momento angular de guinada
+            kn : coeficiente empirico de interferência asa-fuselagem (pode ser obtido pela figura 2.28 do NELSON)
+            krl : fator de correção em função do reynolds da fuselagem
+            SFs : área lateral projetada da fuselagem
+            lF : comprimento da fuselagem
+        '''
+        self.Cnb = - kn * krl * SFs * lF /(self.S * self.b)     # per deg
+        # equação 2.74 do NELSON
+
+        return self.Cnb
 #=======================================================================================================
 class Finn(Empennage):
-    def __init__(self, b: float, c12: list, l: float, h: float, S: float = None, k: int = 1):
+    def __init__(self, b: float, c12: list, l: float, L: float, h: float, S: float = None, k: int = 1):
         '''
         Empenagem Vertical, parâmetros geométricos:
             S : área (m^2)
             b : envergadura (m)
             mac : corda média aerodinamica (m)
             c12 : cordas na raiz e na ponta [raiz, ponta]
-            l : distância do CG até o CA da empenagem em x (m)
-            h : distância do CG até o CA da empenagem em z (m)
+            l : distância do CA até o CA da empenagem em x (m)
+            L : distância do CG até o CA da empenagem em x (m)
+            h : distância do eixo x até o CA da empenagem em z (m)
             k : quantidade de EV's
         '''
         S = S if S!= None else (c12[0] + c12[1])*b*k/2  # area de trapézio
 
-        super().__init__(S, b, (c12[0] + c12[1])/2, 0, c12, l, h)
+        super().__init__(S, b, (c12[0] + c12[1])/2, 0, c12, l, L, h)
 
         self.k = k
         self.r = Rudder()       # leme
         
+        return
+    
+    def vol_cauda (self, Sw: float, bw: float):
+        '''
+        Calcula o Volume de Cauda Vc da empenagem:
+            Sw : área da asa (m)
+            bw : envergadura da asa (m)
+        '''
+        self.Vc = self.L * self.S / (Sw * bw)
+
         return
     
     def Cl_b (self):
@@ -186,15 +212,15 @@ class Finn(Empennage):
 
         return self.Clb
     
-    def Cn_b (self, kn, krl, Vf, ETA):
+    def Cn_b (self, asa : Wing, zw: float, d: float):
         '''
         Retorna o coeficiente de momento angular de guinada
-            kn : fator empírico de interferência asa-fuselagem, função direta da  geometria da fuselagem
-            krl : fator empírico do numero de Reynolds  da fuselagem
-            Vf : "volume de cauda fuselagem" 
+            zw : distancia paralela ao eixo z da corda da asa até a linha de centro da fuselagem
+            d : profundidade da fuselagem
         '''
-        self.Cnb = - kn * krl * Vf + self.Vc * self.CLa * ETA
-        # equação 5.91 TAPERA
+                
+        self.Cnb = self.Vc * self.CLa * (0.724 + 3.06*(self.S/(asa.S*(1 + math.cos(asa.V)))) + 0.4*zw/d + 0.009 * asa.AR)
+        # equação 2.80 + 2.81 do NELSON
 
         return self.Cnb
     
@@ -209,7 +235,7 @@ class Finn(Empennage):
         return self.Cndr
 #=======================================================================================================
 class Tail (Empennage):
-    def __init__(self, S: float, b: float, mac: float, inc: float, c12: list, l: float, h: float):
+    def __init__(self, S: float, b: float, mac: float, inc: float, c12: list, l: float, L: float, h: float):
         '''
         Empenagem Horizontal, parâmetros geométricos:
             S : área (m^2)
@@ -217,12 +243,23 @@ class Tail (Empennage):
             mac : corda média aerodinamica (m)
             inc : ângulo de incidência (deg)
             c12 : cordas na raiz e na ponta [raiz, ponta]
-            l : distância do CG até o CA da empenagem em x (m)
-            h : distância do CG até o CA da empenagem em z (m)
+            l : distância do CA até o CA da empenagem em x (m)
+            L : distância do CG até o CA da empenagem em x (m)
+            h : distância do eixo x até o CA da empenagem em z (m)
         '''
-        super().__init__(S, b, mac, inc, c12, l, h)
+        super().__init__(S, b, mac, inc, c12, l, L, h)
 
         self.e = Elevator()     # profundor
+
+        return
+    
+    def vol_cauda (self, Sw: float, MACw: float):
+        '''
+        Calcula o Volume de Cauda Vc da empenagem:
+            Sw : área da asa (m)
+            MACw : corda media aerodinamica da asa (m)
+        '''
+        self.Vc = self.L * self.S / (Sw * MACw)
 
         return
     
@@ -290,6 +327,19 @@ class Aircraft:
         self.Ixz1 = self.Ixz/ad2                  # momento de inercia Ixz adimensional
         
         return
+    
+    def curve (self, phi):
+        '''
+        Retorna o tempo para completar uma curva e a taxa de curvatura
+            phi : angulo de rolagem da aeronave
+        '''
+        self.t_c = 2*math.pi*self.V0/(9.81*math.tan(phi))
+        # equação 2.25 do COOK
+
+        self.turn_rate = 2*math.pi/self.t_c
+        # equação 2.26 do COOK
+
+        return self.t_c, self.turn_rate
 #=======================================================================================================
 if __name__ == "__main__":
     import main
