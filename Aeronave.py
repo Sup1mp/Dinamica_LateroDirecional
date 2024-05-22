@@ -1,4 +1,6 @@
 import math
+import numpy as np
+from pandas import DataFrame
 
 def Tau (S_super, S_control):
     '''
@@ -10,6 +12,87 @@ def Tau (S_super, S_control):
 
     # equação da figura 2.20 do NELSON
     return 12.267*(x**5) - 25.8*(x**4) + 21.477*(x**3) - 9.6446*(x**2) + 3.26*x + 0.01
+
+def remove_space (var):
+    return [var[j] for j in range(len(var)) if var[j] != '']
+
+def get_xflr5_table (raw, index):
+    values = []
+
+    for i in range(index+1, len(raw)):
+        var = raw[i].split(' ')     # filter for "words/numbers"
+
+        if len(var) > 1:    # checks for empty spaces
+            try:
+                # try to get float
+                values.append([float(var[j]) for j in range(len(var)) if var[j] != ''])
+            except:
+                # not float, ignores and move on
+                pass
+        else:
+            # empty space = end of table
+            break
+
+    return np.array(values)
+
+def read_polar (filename):
+    '''
+    coleta os dados dos arquivos de polar do xflr5
+    '''
+    with open(filename, "r") as file:
+        raw = file.read().split('\n')
+
+    data = {}   # dados avulsos
+
+    for i in range(len(raw)):
+
+        var = raw[i].split(' ')     # filter for "words/numbers"
+
+        # coleta as variaveis assossiadas
+        if "alpha" in raw[i]:
+            dt = DataFrame(get_xflr5_table(raw, i), columns=remove_space(var))
+        
+        # coleta o nome do aviao
+        if "Plane" in raw[i]:
+            data["name"] = var[-1]
+
+        # coleta a velocidade
+        if "speed" in raw[i]:
+            data["V0"] = float(var[-2])
+
+    return dt, data
+    
+def read_wing (filename):
+    '''
+    coleta dados do arquivo de asa do xflr5
+    '''
+    with open(filename, "r") as file:
+        raw = file.read().split('\n')
+    
+    data = {}   # dados avulsos
+
+    for i in range(len(raw)):
+        var = raw[i].split(' ')
+
+        if '=' in raw[i]:
+            # coleta avulsos
+            var = remove_space(var)
+            for j in range(len(var)):
+                if var[j] == '=':
+                    try:
+                        data[var[j - 1]] = float(var[j + 1])
+                    except:
+                        data[var[j - 1]] = float(var[j + 1][:-2])
+
+        if "y-span" in raw[i]:
+            # coleta os dados ao longo da envergadura
+            Mw = DataFrame(get_xflr5_table(raw, i), columns=remove_space(var))
+        
+        if "Panel" in raw[i]:
+            # coleta dados do centro do pressão em cada painel
+            Cp = DataFrame(get_xflr5_table(raw, i), columns=remove_space(var))
+    
+    return Mw, Cp, data
 
 #=======================================================================================================
 class AeroSurface:
