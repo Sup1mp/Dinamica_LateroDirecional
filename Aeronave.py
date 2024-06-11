@@ -34,66 +34,7 @@ def get_xflr5_table (raw, index):
             break
 
     return np.array(values)
-
-def read_polar (filename):
-    '''
-    coleta os dados dos arquivos de polar do xflr5
-    '''
-    with open(filename, "r") as file:
-        raw = file.read().split('\n')
-
-    data = {}   # dados avulsos
-
-    for i in range(len(raw)):
-
-        var = raw[i].split(' ')     # filter for "words/numbers"
-
-        # coleta as variaveis assossiadas
-        if "alpha" in raw[i]:
-            dt = DataFrame(get_xflr5_table(raw, i), columns=remove_space(var))
-        
-        # coleta o nome do aviao
-        if "Plane" in raw[i]:
-            data["name"] = var[-1]
-
-        # coleta a velocidade
-        if "speed" in raw[i]:
-            data["V0"] = float(var[-2])
-
-    return dt, data
     
-def read_wing (filename):
-    '''
-    coleta dados do arquivo de asa do xflr5
-    '''
-    with open(filename, "r") as file:
-        raw = file.read().split('\n')
-    
-    data = {}   # dados avulsos
-
-    for i in range(len(raw)):
-        var = raw[i].split(' ')
-
-        if '=' in raw[i]:
-            # coleta avulsos
-            var = remove_space(var)
-            for j in range(len(var)):
-                if var[j] == '=':
-                    try:
-                        data[var[j - 1]] = float(var[j + 1])
-                    except:
-                        data[var[j - 1]] = float(var[j + 1][:-2])
-
-        if "y-span" in raw[i]:
-            # coleta os dados ao longo da envergadura
-            Mw = DataFrame(get_xflr5_table(raw, i), columns=remove_space(var))
-        
-        if "Panel" in raw[i]:
-            # coleta dados do centro do pressão em cada painel
-            Cp = DataFrame(get_xflr5_table(raw, i), columns=remove_space(var))
-    
-    return Mw, Cp, data
-
 #=======================================================================================================
 class AeroSurface:
     def __init__(self, S: float, b: float, mac: float, inc: float, c12: list = None):
@@ -115,6 +56,74 @@ class AeroSurface:
         self.AR = (self.b**2) / self.S                  # alongamento
         self.lbd = self.c12[1] / self.c12[0]            # afilamento
 
+        self.polar = {}     # dados relacionados à polar
+        self.span = {}      # dados ao longo da envergadura
+
+        return
+    
+    def read_polar (self, filename):
+        '''
+        Coleta os dados dos arquivos de polar do xflr5
+        '''
+        with open(filename, "r") as file:
+            raw = file.read().split('\n')   # reads file
+
+        for i in range(len(raw)):
+
+            var = raw[i].split(' ')     # filter for "words/numbers"
+
+            # coleta as variaveis assossiadas
+            if "alpha" in raw[i]:
+                self.polar['polar'] = DataFrame(get_xflr5_table(raw, i), columns=remove_space(var))
+
+            # coleta a velocidade
+            if "speed" in raw[i]:
+                self.polar["V0"] = float(var[-2])
+
+        # obtem CL
+        fin = self.polar['polar']['CL'].argmax()
+        ini = self.polar['polar']['CL'].argmin()
+
+        self.CLa = round((self.polar['polar'].iloc[fin]['CL'] - self.polar['polar'].iloc[ini]['CL']) / (self.polar['polar'].iloc[fin]['alpha'] - self.polar['polar'].iloc[ini]['alpha']), 6)
+        self.CL0 = self.polar['polar'][self.polar['polar']['alpha'] == 0]['CL'][0]
+
+        # obtem CD
+        fin = self.polar['polar']['CD'].argmax()
+        ini = self.polar['polar']['CD'].argmin()
+        
+        self.CDa = round((self.polar['polar'].iloc[fin]['CD'] - self.polar['polar'].iloc[ini]['CD']) / (self.polar['polar'].iloc[fin]['alpha'] - self.polar['polar'].iloc[ini]['alpha']), 6)
+        self.CD0 = self.polar['polar'][self.polar['polar']['alpha'] == 0]['CD'][0]
+
+        return
+    
+    def read_span (self, filename):
+        '''
+        coleta dados do arquivo de asa do xflr5
+        '''
+        with open(filename, "r") as file:
+            raw = file.read().split('\n')   # reads file
+
+        for i in range(len(raw)):
+            var = raw[i].split(' ')
+
+            if '=' in raw[i]:
+                # coleta avulsos
+                var = remove_space(var)
+                for j in range(len(var)):
+                    if var[j] == '=':
+                        try:
+                            self.span[var[j - 1]] = float(var[j + 1])
+                        except:
+                            self.span[var[j - 1]] = float(var[j + 1][:-2])
+
+            if "y-span" in raw[i]:
+                # coleta os dados ao longo da envergadura
+                self.span['span'] = DataFrame(get_xflr5_table(raw, i), columns=remove_space(var))
+            
+            if "Panel" in raw[i]:
+                # coleta dados do centro do pressão em cada painel
+                self.span['Cp'] = DataFrame(get_xflr5_table(raw, i), columns=remove_space(var)).iloc[:, 1:]
+        
         return
     
     def set_CL (self, CL0, CLa):
