@@ -3,10 +3,10 @@ from scipy import signal
 from math import sin, cos, radians, sqrt
 import matplotlib.pyplot as plt
 
-from Aeronave import Aircraft, Finn, Wing
+from Aeronave import Aircraft, Fin, Wing
 
 class Dinamica_LateroDirecional:
-    def __init__ (self, Aviao : Aircraft, Asa : Wing, EV : Finn):
+    def __init__ (self, Aviao : Aircraft, Asa : Wing, EV : Fin):
         '''
         Classe da Dinâmica Latero-Direcional de aeronaves que utiliza as equações e métodos presentes no COOK et. al (2013)
             Avião : aeronave

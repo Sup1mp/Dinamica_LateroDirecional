@@ -59,6 +59,8 @@ class AeroSurface:
         self.polar = {}     # dados relacionados à polar
         self.span = {}      # dados ao longo da envergadura
 
+        self.set_angles(T = 0, V = 0)   # Ang Diedro = Ang Enflexamento = 0
+
         return
     
     def read_polar (self, filename):
@@ -147,8 +149,20 @@ class AeroSurface:
         self.CD0 = CD0
 
         return
+    
+    def get_CD (self, alpha):
+        # Oswald's factor
+        e = 1/(1.05 + 0.007*math.pi*self.AR)    # Obert
+        # e = 1.78*(1 - 0.045*self.AR**0.68) - 0.64   # internet
+        
+        # pode ser deduzida a partir da equação 3.1 do "Methods for estimating stability and control\
+        #  derivatives of conventional subsonic airplanes" de Jan Roskam
+        return self.CD0 + (self.get_CL(alpha)**2 - self.CL0**2)/(math.pi*self.AR*e)
+    
+    def get_CL (self, alpha):
+        return self.CL0 + self.CLa * alpha
 
-    def angulos (self, T: float, V: float):
+    def set_angles (self, T: float, V: float):
         '''
         Ângulos:
             T : ang diedro (deg)
@@ -158,6 +172,40 @@ class AeroSurface:
         self.V = math.radians(V)    # angulo de enflexamento
 
         return
+    
+    def estimate_CLa (self, k: float, V_LE: float, M: float):
+        '''
+        Estima o valor de CLa com base em métodos paramétricos presentes no "Methods for estimating stability and control derivatives\
+        of conventional subsonic airplanes" de Jan Roskam:
+            k : ratio of actual average wing section lift curve slope, CLa to 2pi
+            V_LE : ângulo de enflexamento no bordo de ataque (deg)
+            M : numero de mach
+        '''
+        # equação 2.3
+        tg_V_c2 = math.tan(math.radians(V_LE)) - ((1 - self.lbd)/(1 + self.lbd))*2/self.AR
+
+        # equação 3.8 + 3.9 modificada
+        self.CLa = 2*math.pi*self.AR/(2 + math.sqrt((1 - M**2 + tg_V_c2**2)*(self.AR/k)**2 + 4))
+        
+        return
+    
+    def estimate_CDa (self, ro: float, V: float, m: float):
+        '''
+        Estima o valor de CDa com base em métodos paramétricos presentes no "Methods for estimating stability and control derivatives\
+        of conventional subsonic airplanes" de Jan Roskam:
+            ro : densidade do ar (kg/m^3)
+            V : velocidade (m/s)
+            m : massa da aeronave (kg)
+        '''
+        # Oswald's factor
+        e = 1/(1.05 + 0.007*math.pi*self.AR)    # Obert
+        # e = 1.78*(1 - 0.045*self.AR**0.68) - 0.64   # internet
+
+        # equação 3.2 + 3.3 + 3.4 modificada
+        self.CDa = 4*m*self.CLa/(ro*V**2 * self.S*math.pi*self.AR*e)
+
+        return
+
 #=======================================================================================================
 class Empennage (AeroSurface):
     def __init__(self, S: float, b: float, mac: float, inc: float, c12: list, l: float, L: float, h: float):
@@ -183,6 +231,17 @@ class Empennage (AeroSurface):
 class Rudder (AeroSurface):
     def __init__(self):
         return
+    
+    def correct_CLa (self, f, AR_f):
+        '''
+        Correção de CLa do leme devido ao efeito geométrico da EV\
+        usando o método descrito em Abbot and Von Doenhoff (1959)
+            f : fator de correção empirico
+            AR_f : alongamento da EV
+        '''
+        self.CLa = f*self.CLa/(1 + self.CLa/(math.pi*AR_f))
+        # equação 13.254 COOK
+        return
 #=======================================================================================================
 class Elevator (AeroSurface):
     def __init__(self):
@@ -192,17 +251,18 @@ class Aileron (AeroSurface):
     def __init__(self):
         return
     
-    def set_geometry (self, b, c, y1):
+    def set_geometry (self, b: float, c: float, y1: float, y2: float = None):
         '''
         Define as dimensioes básicas do aileron
             b : envergadura
             c : corda
-            y1 : distaância perpendicular do eixo x até o começo do aileron
+            y1 : distância perpendicular do eixo x até o começo do aileron
+            y2 : distância perpendicular do eixo x até o final do aileron
         '''
         self.b = b
         self.c = c
         self.y1 = y1
-        self.y2 = y1 + b    # distância perpendicular do eixo x até o final do aileron
+        self.y2 = y2 if y2 != None else y1 + b
         
         return
 #=======================================================================================================
@@ -262,7 +322,7 @@ class Wing (AeroSurface):
 
         return self.Cnb
 #=======================================================================================================
-class Finn(Empennage):
+class Fin(Empennage):
     def __init__(self, b: float, c12: list, l: float, L: float, h: float, S: float = None, k: int = 1):
         '''
         Empenagem Vertical, parâmetros geométricos:
@@ -291,6 +351,10 @@ class Finn(Empennage):
             bw : envergadura da asa (m)
         '''
         self.Vc = self.L * self.S / (Sw * bw)
+
+        # # volume de cauda modificado para EV que possibilita empiricamente ajuste dinâmico
+        # self.Vc = self.S*(self.mac+0.7*self.z*math.tan(self.V))/(Sw*bw)
+        # # equação 13.244 do COOK
 
         return
     
@@ -389,7 +453,6 @@ class Aircraft:
             Ix : momento de inércia Ix eixo aeronautico (kg*m^2)
             Iz : momento de inércia Iz eixo aeronautico (kg*m^2)
             Ixz : momento de inércia Ixz eixo aeronautico (kg*m^2)
-            ro : densidade do ar (kg/m^3)
             V0 : velocidade da aeronave (m/s)
             theta_e : ângulo de equilíbrio entre horizonte e direção de voo (deg)
         '''
