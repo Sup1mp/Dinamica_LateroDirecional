@@ -83,7 +83,7 @@ class Derivadas_LateroDirecional:
 
         # Rolling moment
         self.Lv = -trapezoidal(Lv_int1(), 0, s, n1)/(self.w.S * s)\
-                - 2*CLy*tan(self.w.V)*trapezoidal(Lv_int2(), 0, s, n1)/(self.w.S *s)\
+                - 2*self.w.CLe*tan(self.w.V)*trapezoidal(Lv_int2(), 0, s, n1)/(self.w.S *s)\
                 - self.f.CLa * self.f.Vc * (self.f.h/self.f.l)
 
         # Yawing moment
@@ -117,7 +117,7 @@ class Derivadas_LateroDirecional:
         '''
         Calcula as derivadas adimensionais de controle presentes no apêndice 8 do livro
             cy : corda local na coordenada y
-            dCDy_de :
+            dCDy_de : derivada do coef de arrasto em função de xi (deflexão do aileron) na coordenada y
         '''
         def Le_int ():
             return cy * y
@@ -152,6 +152,54 @@ class Derivadas_LateroDirecional:
 
         return
     
+    # def estabilidade_american (self, V0, ro, m):
+
+    #     ad1 = ro*V0*self.w.S*self.w.b
+    #     ad2 = ro*V0*self.w.S*self.w.b**2
+
+    #     # derivadas de "v" (sideslip)==============================================================
+    #     self.Yv = ad1*Cyb/(4*m)
+
+    #     self.Yp = ad1*Cyp/(4*m)
+
+    #     self.Yr = ad1*Cyr/(4*m)
+
+    #     # derivadas de "p" (roll rate)=============================================================      
+    #     self.Lv = ad1*Clb/(2*Ix)
+
+    #     self.Lp = ad2*Clp/(4*Ix)
+
+    #     self.Lr = ad2*Clr/(4*Ix)
+
+    #     # derivadas de "r" (yaw rate)==============================================================
+    #     self.Nv = ad1*Cnb/(2*Iz)
+
+    #     self.Np = ad2*Cnp/(4*Iz)
+
+    #     self.Nr = ad2*Cnr/(4*Iz)
+
+    #     return
+    
+    # def controle_american (self, V0, ro, m):
+
+    #     ad = ro*V0**2*self.w.S*self.w.b
+        
+    #     # derivadas de "e" (aileron)===============================================================
+    #     self.Ye = ad*Cyde/(2*m)
+
+    #     self.Le = ad*Clde/(2*Ix)
+
+    #     self.Ne = ad*Cnde/(2*Iz)
+       
+    #     # derivadas de "c" (rudder)================================================================
+    #     self.Yc = ad*Cydr/(2*m)
+
+    #     self.Lc = ad*Cldr/(2*Ix)
+
+    #     self.Nc = ad*Cndr/(2*Iz)
+
+    #     return
+
     def show (self):
         print(f"\nYv: {self.Yv}\nYp: {self.Yp}\nYr: {self.Yr}\nYe: {self.Ye}\nYc: {self.Yc}\n")
         print(f"Nv: {self.Nv}\nNp: {self.Np}\nNr: {self.Nr}\nNe: {self.Ne}\nNc: {self.Nc}\n")

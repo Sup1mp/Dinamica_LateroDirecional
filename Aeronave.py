@@ -160,7 +160,7 @@ class AeroSurface:
         return self.CD0 + (self.get_CL(alpha)**2 - self.CL0**2)/(math.pi*self.AR*e)
     
     def get_CL (self, alpha):
-        return self.CL0 + self.CLa * alpha
+        return self.CL0 + self.CLa * (alpha + self.inc)
 
     def set_angles (self, T: float, V: float):
         '''
@@ -182,14 +182,27 @@ class AeroSurface:
             M : numero de mach
         '''
         # equação 2.3
-        tg_V_c2 = math.tan(math.radians(V_LE)) - ((1 - self.lbd)/(1 + self.lbd))*2/self.AR
+        tg_V_c2 = np.tan(np.radians(V_LE)) - ((1 - self.lbd)/(1 + self.lbd))*2/self.AR
 
         # equação 3.8 + 3.9 modificada
-        self.CLa = 2*math.pi*self.AR/(2 + math.sqrt((1 - M**2 + tg_V_c2**2)*(self.AR/k)**2 + 4))
+        self.CLa = 2*np.pi*self.AR/(2 + np.sqrt((1 - M**2 + tg_V_c2**2)*(self.AR/k)**2 + 4))
         
         return
     
-    def estimate_CDa (self, ro: float, V: float, m: float):
+    def estimate_CLe (self, ro, V, m):
+        '''
+        Estima o valor do CL de equilibrio com base em métodos paramétricos presentes no "Methods for estimating stability and control derivatives\
+        of conventional subsonic airplanes" de Jan Roskam:
+            ro : densidade do ar (kg/m^3)
+            V : velocidade (m/s)
+            m : massa da aeronave (kg)
+        '''
+        # equação 3.3
+        self.CLe = 2*m/(ro*V**2 * self.S)
+        
+        return
+    
+    def estimate_CDa (self, ro, V, m):
         '''
         Estima o valor de CDa com base em métodos paramétricos presentes no "Methods for estimating stability and control derivatives\
         of conventional subsonic airplanes" de Jan Roskam:
@@ -462,7 +475,7 @@ class Aircraft:
         self.Iz = Iz
 
         self.V0 = V0
-        self.theta_e = math.radians(theta_e)
+        self.theta_e = np.radians(theta_e)
 
     def ad_mass (self, ro: float, Sw: float, bw: float):
         '''
