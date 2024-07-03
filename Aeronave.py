@@ -59,7 +59,7 @@ class AeroSurface:
         self.polar = {}     # dados relacionados à polar
         self.span = {}      # dados ao longo da envergadura
 
-        self.set_angles(T = 0, V = 0)   # Ang Diedro = Ang Enflexamento = 0
+        self.set_angles(T = 0, V_c4 = 0)   # Ang Diedro = Ang Enflexamento = 0
 
         return
     
@@ -162,14 +162,14 @@ class AeroSurface:
     def get_CL (self, alpha):
         return self.CL0 + self.CLa * (alpha + self.inc)
 
-    def set_angles (self, T: float, V: float):
+    def set_angles (self, T: float, V_c4: float):
         '''
         Ângulos:
             T : ang diedro (deg)
-            V : ang enflexamento (deg)
+            V_c4 : ang enflexamento (deg)
         '''
-        self.T = math.radians(T)    # angulo de diedro
-        self.V = math.radians(V)    # angulo de enflexamento
+        self.T = math.radians(T)            # angulo de diedro
+        self.V_c4 = math.radians(V_c4)      # angulo de enflexamento
 
         return
     
@@ -178,11 +178,11 @@ class AeroSurface:
         Estima o valor de CLa com base em métodos paramétricos presentes no "Methods for estimating stability and control derivatives\
         of conventional subsonic airplanes" de Jan Roskam:
             k : ratio of actual average wing section lift curve slope, CLa to 2pi
-            V_LE : ângulo de enflexamento no bordo de ataque (deg)
+            V_LE : ângulo de enflexamento no bordo de ataque (rad)
             M : numero de mach
         '''
         # equação 2.3
-        tg_V_c2 = np.tan(np.radians(V_LE)) - ((1 - self.lbd)/(1 + self.lbd))*2/self.AR
+        tg_V_c2 = np.tan(V_LE) - ((1 - self.lbd)/(1 + self.lbd))*2/self.AR
 
         # equação 3.8 + 3.9 modificada
         self.CLa = 2*np.pi*self.AR/(2 + np.sqrt((1 - M**2 + tg_V_c2**2)*(self.AR/k)**2 + 4))
@@ -351,7 +351,8 @@ class Fin(Empennage):
         S = S if S!= None else (c12[0] + c12[1])*b*k/2  # area de trapézio
 
         super().__init__(S, b, (c12[0] + c12[1])/2, 0, c12, l, L, h)
-
+        
+        self.V_c4 = math.atan(3*(c12[0] - c12[1])/(4*b))    # alinhamento no bordo de fuga
         self.k = k
         self.r = Rudder()       # leme
         
@@ -371,6 +372,20 @@ class Fin(Empennage):
 
         return
     
+    def effective_AR (self, AR_B_AR, AR_HB_AR_B, KH):
+        '''
+        Calcula o AR effetivo da EV, obtido no Methods for estimating stability and control derivatives\
+         of conventional subsonic airplanes by ROSKAM
+            AR_B_AR : razão do AR na preseça do corpo com o AR da EV isolada (figura 7.5)
+            AR_HB_AR_B : razão do AR na presença da EH e do corpo com o AR só na presença do corpo (figura 7.6)
+            KH : fator que conta com o tamanho relativo da EH e da EV (figura 7.7)
+        '''
+        self.AR = AR_B_AR * self.AR * (1 + KH* (AR_HB_AR_B - 1))
+        # equação 7.6 do Methods for estimating stability and control derivatives of conventional\
+        #  subsonic airplanes by ROSKAM
+        
+        return
+
     def Cl_b (self):
         '''
         Retorna a contribuição da EV para o coeficiente de momento lateral em função de beta (sideslip)
@@ -388,7 +403,7 @@ class Fin(Empennage):
             d : profundidade da fuselagem
         '''
                 
-        self.Cnb = self.Vc * self.CLa * (0.724 + 3.06*(self.S/(asa.S*(1 + math.cos(asa.V)))) + 0.4*zw/d + 0.009 * asa.AR)
+        self.Cnb = self.Vc * self.CLa * (0.724 + 3.06*(self.S/(asa.S*(1 + math.cos(asa.V_c4)))) + 0.4*zw/d + 0.009 * asa.AR)
         # equação 2.80 + 2.81 do NELSON
 
         return self.Cnb
