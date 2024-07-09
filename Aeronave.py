@@ -218,7 +218,6 @@ class AeroSurface:
         self.CDa = 4*m*self.CLa/(ro*V**2 * self.S*math.pi*self.AR*e)
 
         return
-
 #=======================================================================================================
 class Empennage (AeroSurface):
     def __init__(self, S: float, b: float, mac: float, inc: float, c12: list, l: float, L: float, h: float):
@@ -385,6 +384,12 @@ class Fin(Empennage):
         #  subsonic airplanes by ROSKAM
         
         return
+    
+    def chord(self, h):
+        '''
+        Retorna a corda local na coordenada h de uma EV alinhada no bordo de fuga
+        '''
+        return self.c12[0] + (self.c12[1] - self.c12[0])*h/self.b
 
     def Cl_b (self):
         '''

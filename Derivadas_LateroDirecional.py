@@ -1,25 +1,7 @@
 from math import tan, cos
 import numpy as np
 from Aeronave import Wing, Fin
-
-def weddle (yi, a, b):
-    '''
-    Weddle's Rule para calculo de integral definida entre "a" e "b" com n = 5 com 7 termos (5 a mais)
-        yi : valores de f(xi) igualmente espaçados entre "a" e "b" de modo que yi[0] = f(a) e yi[6] = f(b)
-    '''
-
-    # Weddle's Rule, ESDU 85046
-    return (3*(b - a)/50)*(yi[0] + 5*yi[1] + yi[2] + 6*yi[3] + yi[4] + 5*yi[5] + yi[6])
-
-def trapezoidal (yi: list, a: float , b: float, n: int):
-    '''
-    Trapezoidal Rule para calculo de integral definida entre "a" e "b" com precisão de n termos igualmente espaçados
-        yi : valores de f(xi) igualmente espaçados entre "a" e "b" de modo que yi[0] = f(a) e yi[-1] = f(b)
-    '''
-    if len(yi) == n:
-        return (b - a)/(2*n) * (yi[0] + yi[-1] + 2*np.sum(yi[1:-1]))
-    raise ValueError("Size of list yi not match with n")
-
+from Util import trapezoidal
 
 class Derivadas_LateroDirecional_eng:
     def __init__(self):
@@ -44,7 +26,7 @@ class Derivadas_LateroDirecional_eng:
             S_B : área lateral projetada da fuselagem
         '''
         def Lv_int1 ():
-            return cy * dCL_day * w.T * y        # Wing with Dihedral
+            return cy * dCL_day * w.T * y           # Wing with Dihedral
         
         def Lv_int2 ():
             return cy * y                           # wing with aft sweep
@@ -80,7 +62,7 @@ class Derivadas_LateroDirecional_eng:
         # Rolling moment
         self.Lv = -trapezoidal(Lv_int1(), 0, s, n1)/(w.S * s)\
                 - 2*w.CLe*tan(w.V_c4)*trapezoidal(Lv_int2(), 0, s, n1)/(w.S *s)\
-                - f.CLa * f.Vc * (f.h/f.l)
+                - f.CLa * f.Vc * (f.h/f.L)
 
         # Yawing moment
         self.Nv = f.CLa * f.Vc
@@ -105,7 +87,7 @@ class Derivadas_LateroDirecional_eng:
 
         # Yawing moment
         self.Nr = -trapezoidal(Nr_int(), 0, s, n1)/(w.S*s**2)\
-                - f.CLa*f.Vc*(f.l/w.b)
+                - f.CLa*f.Vc*(f.L/w.b)
 
         return
     
@@ -140,15 +122,22 @@ class Derivadas_LateroDirecional_eng:
 
         # derivadas de "c" (rudder)================================================================
         # Side force
-        self.Yc = f.S/f.r.CLa
+        self.Yc = f.S*f.r.CLa/w.S
 
         # Rolling moment
-        self.Lc = f.Vc*f.r.CLa*(f.h/f.l)
+        self.Lc = f.Vc*f.r.CLa*(f.h/f.L)
 
         # Yawing moment
         self.Nc = -f.Vc*f.r.CLa
 
         return
+    
+    def get_derivatives(self, V0):
+        return np.array([
+            V0, self.Lv, self.Lp, self.Lr, self.Le, self.Lc,
+            self.Nv, self.Np, self.Nr, self.Ne, self.Nc,
+            self.Yv, self.Yp, self.Yr, self.Ye, self.Yc
+        ])
     
     # def estabilidade_american (self, V0, ro, m):
 
