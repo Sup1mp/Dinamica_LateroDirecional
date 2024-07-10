@@ -5,7 +5,7 @@ def mach(V, T):
     '''
     Return the mach number for a certain temperature
         V : velocity (m/s)
-        T : temperature (C°)
+        T : temperature (°C)
     '''
     return V/math.sqrt(1.4*8.31*(T + 273.15)/0.02897)
 
