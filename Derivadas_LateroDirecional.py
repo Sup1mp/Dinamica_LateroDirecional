@@ -10,11 +10,10 @@ class Derivadas_LateroDirecional_eng:
         '''
         return
 
-    def estabilidade (self, w: Wing, f: Fin, dCL_day, dCD_day, dCL_dah, CDy, CLy, cy: list, ch: list, y_B: float, S_B: float):
+    def estabilidade (self, a, dCL_day, dCD_day, dCL_dah, CDy, CLy, cy: list, ch: list):
         '''
         Calcula as derivadas adimensionais de estabilidade presentes no apêndice 8 do livro
-            w : asa 
-            f : empenagem vertical
+            a : aeronave
             dCL_day : derivada do coef de sustentação em função de alpha na coordenada y
             dCD_day : derivada do coef de arrasto em função de alpha na coordenada y
             dCL_dah : derivada do coef de sustentação em função de alpha na coordenada h
@@ -22,11 +21,9 @@ class Derivadas_LateroDirecional_eng:
             CLy : coef de sustentação local na coordenada y
             cy : corda local na coordenada y
             ch : corda local na coordenada h
-            y_B : coef de arrasto lateral total
-            S_B : área lateral projetada da fuselagem
         '''
         def Lv_int1 ():
-            return cy * dCL_day * w.T * y           # Wing with Dihedral
+            return cy * dCL_day * a.w.T * y           # Wing with Dihedral
         
         def Lv_int2 ():
             return cy * y                           # wing with aft sweep
@@ -46,56 +43,54 @@ class Derivadas_LateroDirecional_eng:
         def Nr_int ():
             return CDy * cy * y**2                  # wing contribution
 
-        f.vol_cauda(w.S, w.b)   # garante que o volume de cauda vertical foi calculado
-        s = w.b/2               # pra facilitar
+        s = a.w.b/2               # pra facilitar
 
         n1 = len(cy)    # size of wing chord data
         n2 = len(ch)    # size of fin chord data
 
         y = np.linspace(0, s, n1)
-        h = np.linspace(0, f.b, n2)
+        h = np.linspace(0, a.f.b, n2)
 
         # derivadas de "v" (sideslip)==============================================================
         # Side force
-        self.Yv = (S_B*y_B - f.S*f.CLa)/w.S
+        self.Yv = (a.b.Sl*a.b.CDl - a.f.S*a.f.CLa)/a.w.S
 
         # Rolling moment
-        self.Lv = -trapezoidal(Lv_int1(), 0, s, n1)/(w.S * s)\
-                - 2*w.CLe*tan(w.V_c4)*trapezoidal(Lv_int2(), 0, s, n1)/(w.S *s)\
-                - f.CLa * f.Vc * (f.h/f.L)
+        self.Lv = -trapezoidal(Lv_int1(), 0, s, n1)/(a.w.S * s)\
+                - 2*a.CLe*tan(a.w.V_c4)*trapezoidal(Lv_int2(), 0, s, n1)/(a.w.S * s)\
+                - a.f.CLa * a.Vv * (a.hf/a.Lf)
 
         # Yawing moment
-        self.Nv = f.CLa * f.Vc
+        self.Nv = a.f.CLa * a.Vv    #??
 
         # derivadas de "p" (roll rate)=============================================================
         # Side force 
-        self.Yp = -trapezoidal(Yp_int(), 0, f.b, n2)/(w.S * w.b)
+        self.Yp = -trapezoidal(Yp_int(), 0, a.f.b, n2)/(a.w.S * a.w.b)
 
         # Rolling moment
-        self.Lp =  -trapezoidal(Lp_int(), 0, s, n1)/(2*w.S*s**2)
+        self.Lp =  -trapezoidal(Lp_int(), 0, s, n1)/(2*a.w.S * s**2)
 
         # Yawing moment
-        self.Np = -trapezoidal(Np_int(), 0, s, n1)/(2*w.S*s**2)
+        self.Np = -trapezoidal(Np_int(), 0, s, n1)/(2*a.w.S * s**2)
 
         # derivadas de "r" (yaw rate)==============================================================
         # Side force
-        self.Yr = f.Vc*f.CLa
+        self.Yr = a.Vv*a.f.CLa      #??
 
         # Rolling moment
-        self.Lr = trapezoidal(Lr_int(), 0, s, n1)/(w.S*s**2)\
-                + f.CLa*f.Vc*(f.h/w.b)
+        self.Lr = trapezoidal(Lr_int(), 0, s, n1)/(a.w.S * s**2)\
+                + a.f.CLa*a.Vv*(a.hf/a.w.b)
 
         # Yawing moment
-        self.Nr = -trapezoidal(Nr_int(), 0, s, n1)/(w.S*s**2)\
-                - f.CLa*f.Vc*(f.L/w.b)
+        self.Nr = -trapezoidal(Nr_int(), 0, s, n1)/(a.w.S * s**2)\
+                - a.f.CLa*a.Vv*(a.Lf/a.w.b)
 
         return
     
-    def controle (self, w: Wing, f: Fin, cy, dCDy_de):
+    def controle (self, a, cy, dCDy_de):
         '''
         Calcula as derivadas adimensionais de controle presentes no apêndice 8 do livro
-            w : asa
-            f : empenagem vertical
+            a : aeronave
             cy : corda local na coordenada y
             dCDy_de : derivada do coef de arrasto em função de xi (deflexão do aileron) na coordenada y
         '''
@@ -105,30 +100,30 @@ class Derivadas_LateroDirecional_eng:
         def Ne_int ():
             return dCDy_de * cy * y
         
-        s = w.b/2  # pra facilitar
+        s = a.w.b/2  # pra facilitar
 
         n1 = len(cy)
-        y = np.linspace(w.a.y1, w.a.y2, n1)
+        y = np.linspace(a.a.y1, a.a.y2, n1)
 
         # derivadas de "e" (aileron)===============================================================
         # Side force
         self.Ye = 0
 
         # Rolling moment
-        self.Le = -w.a.CLa*trapezoidal(Le_int(), w.a.y1, w.a.y2, n1)/(w.S*s)
+        self.Le = -a.a.CLa*trapezoidal(Le_int(), a.a.y1, a.a.y2, n1)/(a.w.S * s)
         
         # Yawing moment
-        self.Ne = trapezoidal(Ne_int(), w.a.y1, w.a.y2, n1)/(w.S*s)
+        self.Ne = trapezoidal(Ne_int(), a.a.y1, a.a.y2, n1)/(a.w.S * s)
 
         # derivadas de "c" (rudder)================================================================
         # Side force
-        self.Yc = f.S*f.r.CLa/w.S
+        self.Yc = a.f.S*a.r.CLa/a.w.S
 
         # Rolling moment
-        self.Lc = f.Vc*f.r.CLa*(f.h/f.L)
+        self.Lc = a.Vv*a.r.CLa*(a.hf/a.Lf)
 
         # Yawing moment
-        self.Nc = -f.Vc*f.r.CLa
+        self.Nc = -a.Vv*a.r.CLa
 
         return
     

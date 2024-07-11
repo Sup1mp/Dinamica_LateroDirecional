@@ -1,5 +1,11 @@
-import math
 import numpy as np
+from pandas import DataFrame
+
+def remove_space (var):
+    '''
+    Remove spaces and return only the data on a string
+    '''
+    return [var[j] for j in range(len(var)) if var[j] != '']
 
 def mach(V, T):
     '''
@@ -7,7 +13,7 @@ def mach(V, T):
         V : velocity (m/s)
         T : temperature (°C)
     '''
-    return V/math.sqrt(1.4*8.31*(T + 273.15)/0.02897)
+    return V/np.sqrt(1.4*8.31*(T + 273.15)/0.02897)
 
 def calc_erro (real, aprox):
     return np.round(abs((aprox - real)/real), 3)
@@ -28,6 +34,79 @@ def trapezoidal (yi: list, a: float , b: float, n: int):
     if len(yi) == n:
         return (b - a)/(2*n) * (yi[0] + yi[-1] + 2*np.sum(yi[1:-1]))
     raise ValueError("Size of list yi not match with n")
+
+def get_xflr5_table (raw, index):
+    values = []
+
+    for i in range(index+1, len(raw)):
+        var = raw[i].split(' ')     # filter for "words/numbers"
+
+        if len(var) > 1:    # checks for empty spaces
+            try:
+                # try to get float
+                values.append([float(var[j]) for j in range(len(var)) if var[j] != ''])
+            except:
+                # not float, ignores and move on
+                pass
+        else:
+            # empty space = end of table
+            break
+
+    return np.array(values)
+
+def read_polar (filename):
+    '''
+    Coleta os dados dos arquivos de polar do xflr5
+    '''
+    with open(filename, "r") as file:
+        raw = file.read().split('\n')   # reads file
+
+    polar = {}  # dados relacionados à polar
+
+    for i in range(len(raw)):
+
+        var = raw[i].split(' ')     # filter for "words/numbers"
+
+        # coleta as variaveis assossiadas
+        if "alpha" in raw[i]:
+            polar['polar'] = DataFrame(get_xflr5_table(raw, i), columns=remove_space(var))
+
+        # coleta a velocidade
+        if "speed" in raw[i]:
+            polar["V0"] = float(var[-2])
+    return polar
+
+def read_span (filename):
+    '''
+    coleta dados do arquivo de asa do xflr5
+    '''
+    with open(filename, "r") as file:
+        raw = file.read().split('\n')   # reads file
+    
+    span = {}   # dados ao longo da envergadura
+
+    for i in range(len(raw)):
+        var = raw[i].split(' ')
+
+        if '=' in raw[i]:
+            # coleta avulsos
+            var = remove_space(var)
+            for j in range(len(var)):
+                if var[j] == '=':
+                    try:
+                        span[var[j - 1]] = float(var[j + 1])
+                    except:
+                        span[var[j - 1]] = float(var[j + 1][:-2])
+
+        if "y-span" in raw[i]:
+            # coleta os dados ao longo da envergadura
+            span['span'] = DataFrame(get_xflr5_table(raw, i), columns=remove_space(var))
+        
+        if "Panel" in raw[i]:
+            # coleta dados do centro do pressão em cada painel
+            span['Cp'] = DataFrame(get_xflr5_table(raw, i), columns=remove_space(var)).iloc[:, 1:]
+    
+    return span
 
 if __name__ == "__main__":
     pass

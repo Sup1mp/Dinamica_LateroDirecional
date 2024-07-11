@@ -3,39 +3,6 @@ import numpy as np
 from pandas import DataFrame
 import Util
 
-def Tau (S_super, S_control):
-    '''
-    Retorna o valor do parâmetros TAU para superfícies de controle
-        S_super : área total da empenagem
-        S_control : área da superficie de controle (leme ou profundor)
-    '''
-    x = S_control / S_super
-
-    # equação da figura 2.20 do NELSON
-    return 12.267*(x**5) - 25.8*(x**4) + 21.477*(x**3) - 9.6446*(x**2) + 3.26*x + 0.01
-
-def remove_space (var):
-    return [var[j] for j in range(len(var)) if var[j] != '']
-
-def get_xflr5_table (raw, index):
-    values = []
-
-    for i in range(index+1, len(raw)):
-        var = raw[i].split(' ')     # filter for "words/numbers"
-
-        if len(var) > 1:    # checks for empty spaces
-            try:
-                # try to get float
-                values.append([float(var[j]) for j in range(len(var)) if var[j] != ''])
-            except:
-                # not float, ignores and move on
-                pass
-        else:
-            # empty space = end of table
-            break
-
-    return np.array(values)
-    
 #=======================================================================================================
 class AeroSurface:
     def __init__(self, S: float, b: float, mac: float, c12: list = None):
@@ -55,76 +22,8 @@ class AeroSurface:
         self.AR = (self.b**2) / self.S                  # alongamento
         self.lbd = self.c12[1] / self.c12[0]            # afilamento
 
-        # self.polar = {}     # dados relacionados à polar
-        # self.span = {}      # dados ao longo da envergadura
-
         self.set_angles()   # ângulos = 0
 
-        return
-    
-    def read_polar (self, filename):
-        '''
-        Coleta os dados dos arquivos de polar do xflr5
-        '''
-        with open(filename, "r") as file:
-            raw = file.read().split('\n')   # reads file
-
-        for i in range(len(raw)):
-
-            var = raw[i].split(' ')     # filter for "words/numbers"
-
-            # coleta as variaveis assossiadas
-            if "alpha" in raw[i]:
-                self.polar['polar'] = DataFrame(get_xflr5_table(raw, i), columns=remove_space(var))
-
-            # coleta a velocidade
-            if "speed" in raw[i]:
-                self.polar["V0"] = float(var[-2])
-
-        # obtem CL
-        fin = self.polar['polar']['CL'].argmax()
-        ini = self.polar['polar']['CL'].argmin()
-
-        self.CLa = round((self.polar['polar'].iloc[fin]['CL'] - self.polar['polar'].iloc[ini]['CL']) / (self.polar['polar'].iloc[fin]['alpha'] - self.polar['polar'].iloc[ini]['alpha']), 6)
-        self.CL0 = self.polar['polar'][self.polar['polar']['alpha'] == 0]['CL'][0]
-
-        # obtem CD
-        fin = self.polar['polar']['CD'].argmax()
-        ini = self.polar['polar']['CD'].argmin()
-        
-        self.CDa = round((self.polar['polar'].iloc[fin]['CD'] - self.polar['polar'].iloc[ini]['CD']) / (self.polar['polar'].iloc[fin]['alpha'] - self.polar['polar'].iloc[ini]['alpha']), 6)
-        self.CD0 = self.polar['polar'][self.polar['polar']['alpha'] == 0]['CD'][0]
-
-        return
-    
-    def read_span (self, filename):
-        '''
-        coleta dados do arquivo de asa do xflr5
-        '''
-        with open(filename, "r") as file:
-            raw = file.read().split('\n')   # reads file
-
-        for i in range(len(raw)):
-            var = raw[i].split(' ')
-
-            if '=' in raw[i]:
-                # coleta avulsos
-                var = remove_space(var)
-                for j in range(len(var)):
-                    if var[j] == '=':
-                        try:
-                            self.span[var[j - 1]] = float(var[j + 1])
-                        except:
-                            self.span[var[j - 1]] = float(var[j + 1][:-2])
-
-            if "y-span" in raw[i]:
-                # coleta os dados ao longo da envergadura
-                self.span['span'] = DataFrame(get_xflr5_table(raw, i), columns=remove_space(var))
-            
-            if "Panel" in raw[i]:
-                # coleta dados do centro do pressão em cada painel
-                self.span['Cp'] = DataFrame(get_xflr5_table(raw, i), columns=remove_space(var)).iloc[:, 1:]
-        
         return
     
     def set_CL (self, CL0, CLa):
@@ -224,6 +123,15 @@ class ControlSurface:
         '''
         self.CLa = CLa
         return
+    
+    def TAU (self, S):
+        '''
+        Retorna o valor do parâmetros TAU para superfícies de controle
+            S : área total da superfície onde o controle está
+        '''
+        x = self.S / S
+        # equação da figura 2.20 do NELSON
+        return 12.267*(x**5) - 25.8*(x**4) + 21.477*(x**3) - 9.6446*(x**2) + 3.26*x + 0.01
 #=======================================================================================================
 class Rudder (ControlSurface):
     def __init__(self, S: float, c: float):
@@ -343,8 +251,18 @@ class Tail (AeroSurface):
         return
 #=======================================================================================================
 class Body:
-    def __init__(self) -> None:
-        pass
+    def __init__(self, Sl: float, h: float):
+        '''
+        Fuselagem
+            Sl : área lateral projetada da fuselagem
+            h : altura
+        '''
+        self.Sl = Sl
+        self.h = h
+
+        self.CDl = -(0.00714 + 0.674*h**2/Sl)   # estimation of sideforce due to sideslip for body
+        return
+
 #=======================================================================================================
 class Aircraft:
     def __init__(self, wing: Wing, fin: Fin, tail: Tail, body: Body, V):
@@ -451,37 +369,50 @@ class Aircraft:
         self.Vh = self.Lt * self.t.S / (self.w.S * self.w.mac)
         return
     
-    def estimate_CLe (self, ro: float):
+    def estimate_Coefs (self, k: float, T: float, ro : float):
         '''
-        Estima o valor do CL de equilibrio com base em métodos paramétricos presentes no "Methods for estimating stability and control derivatives\
-        of conventional subsonic airplanes" de Jan Roskam:
-            ro : densidade do ar (kg/m^3)
-        '''
-        # equação 3.3
-        return 2*self.m/(ro*self.V**2 * self.w.S)
-    
-    def estimate_Coefs_a (self, k: float, T: float, ro : float):
-        '''
-        Estima os valores de CLa e CDa com base em métodos paramétricos presentes no "Methods for estimating stability and control derivatives\
+        Estima os valores dos coeficientes com base em métodos paramétricos presentes no "Methods for estimating stability and control derivatives\
         of conventional subsonic airplanes" de Jan Roskam:
             k : ratio of actual average wing section lift curve slope, CLa to 2pi
             T : temperatura (°C)
             ro : densidade do ar (kg/m^3)
         '''
+        # CLa total da aeronave
         self.w.estimate_CLa(k, self.w.V_LE, Util.mach(self.V, T))
         self.f.estimate_CLa(k, self.f.V_LE, Util.mach(self.V, T))
         # self.t.estimate_CLa(k, self.t.V_LE, Util.mach(self.V, T))
 
-        # CLa total da aeronave
         # self.CLa = self.w.CLa + self.t.CLa
 
+        # CDa total da aeronave
         self.w.estimate_CDa(ro, self.V, self.m)
         self.f.estimate_CDa(ro, self.V, self.m)
         # self.t.estimate_CDa(ro, self.V, self.m)
 
-        # CDa total da aeronave
         # self.CDa = self.w.CDa + self.f.CDa + self.t.CDa
+
+        # CL de equilíbrio da aeronave
+        self.CLe = 2*self.m/(ro*self.V**2 * self.w.S)
+        # equação 3.3
         return
+    
+    def get_CL_eq (self):
+        '''
+        Retorna CL de equilíbrio da aeronave
+        '''
+        return self.CLe
+    
+    def get_CLa (self):
+        '''
+        Retorna CLa da aeronave
+        '''
+        return self.CLa
+    
+    def get_CDa (self):
+        '''
+        Retorna CDa da aeronave
+        '''
+        return self.CDa
     
     def curve (self, phi):
         '''
