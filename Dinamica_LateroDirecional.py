@@ -1,70 +1,51 @@
 import numpy as np
 from scipy import signal
-from math import sin, cos, radians, sqrt
+from math import sin, cos, sqrt
 import matplotlib.pyplot as plt
 
-from Aeronave import Aircraft, Fin, Wing
+from Aeronave import Aircraft
 
 class Dinamica_LateroDirecional:
-    def __init__ (self, Aviao : Aircraft, Asa : Wing, EV : Fin):
+    def __init__ (self, aero: Aircraft):
         '''
         Classe da Dinâmica Latero-Direcional de aeronaves que utiliza as equações e métodos presentes no COOK et. al (2013)
-            Avião : aeronave
-            Asa : asa da aeronave
-            EV : empenagem vertical da aeronave
         '''
-        self.a = Aviao
-        self.w = Asa
-        self.f = EV
-
+        self.aero = aero
         return
 
-    def matriz_A (self, Yv:float, Lv:float, Nv:float, Yp:float, Lp:float, Np:float, Yr:float, Lr:float, Nr:float):
+    # def matriz_A (self, Yv:float, Lv:float, Nv:float, Yp:float, Lp:float, Np:float, Yr:float, Lr:float, Nr:float):
+    def A_B (self):
         '''
-        Calcula a matriz de estabilidade "A" utilizando as derivadas adimensionais
-        Yv, Lv, Nv, Yp, Lp, Np, Yr, Lr, Nr do apêndice 8 do mesmo livro 
+        Calcula as matrizes "A" e "B" utilizando as derivadas adimensionais do apêndice 8 do mesmo livro 
         '''
-
-        a1 = self.a.Ix1*self.a.Iz1 - (self.a.Ixz1**2)   # pra facilitar
+        a1 = self.aero.Ix1*self.aero.Iz1 - (self.aero.Ixz1**2)   # pra facilitar
         g = 9.81    # gravidade
 
         # voo reto e simétrico permite essa simplificação
-        Ue = self.a.V0*cos(self.a.theta_e)
-        We = self.a.V0*sin(self.a.theta_e)
+        Ue = self.aero.V*cos(self.aero.theta)
+        We = self.aero.V*sin(self.aero.theta)
 
         # matriz de estabilidade
         self.A = np.array([
-            [Yv/self.a.m1, (Yp*self.w.b + self.a.m1*We)/self.a.m1, (Yr*self.w.b - self.a.m1*Ue)/self.a.m1, g*cos(self.a.theta_e), g*sin(self.a.theta_e)],
-            [(self.a.Ixz1*Nv + self.a.Iz1*Lv)/a1, (self.a.Ixz1*Np + self.a.Iz1*Lp)*self.w.b/a1, (self.a.Ixz1*Nr + self.a.Iz1*Lr)*self.w.b/a1, 0, 0],
-            [(self.a.Ix1*Nv + self.a.Ixz1*Lv)/a1, (self.a.Ix1*Np + self.a.Ixz1*Lp)*self.w.b/a1, (self.a.Ix1*Nr + self.a.Ixz1*Lr)*self.w.b/a1, 0, 0],
+            [self.aero.Yv/self.aero.m1, (self.aero.Yp*self.aero.w.b + self.aero.m1*We)/self.aero.m1, (self.aero.Yr*self.aero.w.b - self.aero.m1*Ue)/self.aero.m1, g*cos(self.aero.theta), g*sin(self.aero.theta)],
+            [(self.aero.Ixz1*self.aero.Nv + self.aero.Iz1*self.aero.Lv)/a1, (self.aero.Ixz1*self.aero.Np + self.aero.Iz1*self.aero.Lp)*self.aero.w.b/a1, (self.aero.Ixz1*self.aero.Nr + self.aero.Iz1*self.aero.Lr)*self.aero.w.b/a1, 0, 0],
+            [(self.aero.Ix1*self.aero.Nv + self.aero.Ixz1*self.aero.Lv)/a1, (self.aero.Ix1*self.aero.Np + self.aero.Ixz1*self.aero.Lp)*self.aero.w.b/a1, (self.aero.Ix1*self.aero.Nr + self.aero.Ixz1*self.aero.Lr)*self.aero.w.b/a1, 0, 0],
             [0, 1, 0, 0, 0],
             [0, 0, 1, 0, 0]
         ])
 
-        return self.A
-
-    def matriz_B (self, Ye:float, Le:float, Ne:float, Yc:float, Lc:float, Nc:float):
-        '''
-        Calcula a matriz de controle "B" utilizando as derivadas adimensionais
-        Ye, Le, Ne, Yc, Lc, Nc do apêndice 8 do mesmo livro, onde as letras gregas são
-            e : epsilon
-            c : zeta
-        '''
-
-        a1 = self.a.Ix1*self.a.Iz1 - (self.a.Ixz1**2)   # pra facilitar
-
         # matriz de controle
-        self.B = self.a.V0 * np.array([
-            [Ye/self.a.m1, Yc/self.a.m1],
-            [(self.a.Ixz1*Ne + self.a.Iz1*Le)/a1, (self.a.Ixz1*Nc + self.a.Iz1*Lc)/a1],
-            [(self.a.Ix1*Ne + self.a.Ixz1*Le)/a1, (self.a.Ix1*Nc + self.a.Ixz1*Lc)/a1],
+        self.B = self.aero.V * np.array([
+            [self.aero.Ye/self.aero.m1, self.aero.Yc/self.aero.m1],
+            [(self.aero.Ixz1*self.aero.Ne + self.aero.Iz1*self.aero.Le)/a1, (self.aero.Ixz1*self.aero.Nc + self.aero.Iz1*self.aero.Lc)/a1],
+            [(self.aero.Ix1*self.aero.Ne + self.aero.Ixz1*self.aero.Le)/a1, (self.aero.Ix1*self.aero.Nc + self.aero.Ixz1*self.aero.Lc)/a1],
             [0, 0],
             [0, 0]
         ])
 
-        return self.B
+        return self.A, self.B
     
-    def matriz_G (self):
+    def G (self):
         '''
         Retorna a equação caracteristica (delta) e a matriz de polinomios (N) para cada variavel utilizando
         as equações 
@@ -188,48 +169,33 @@ class Dinamica_LateroDirecional:
             Npsi_e, Npsi_c
         ]
 
-
         return self.delta, self.N
     
-    def aprox_Tr (self, Ix_d, Lp_d):
+    def aprox_Tr (self):
         '''
         Retorna a constante de tempo Tr do Roll Mode aproximada
-            Ix_d : momento de inércia Ix eixo aeronautico (kg*m^2)
-            Lp_d : derivada dimensional Lp
         '''
-        self.Tr_ap = -Ix_d/Lp_d
-        
-        return self.Tr_ap
+        return -self.aero.Ix/self.aero.Lp1
     
-    def aprox_Ts (self, V0, Lv, Nv, Lp, Np, Lr, Nr):
+    def aprox_Ts (self):
         '''
         Retorna a constante de tempo Ts do Spiral Mode aproximada
-            V0 : velocidade da aeronave (m/s)
         '''
-        self.Ts_ap = -V0/9.81 * (Lv*Np - Lp*Nv)/(Lr*Nv - Lv*Nr)
-
-        return self.Ts_ap
+        return -self.aero.V/9.81 * (self.aero.Lv*self.aero.Np - self.aero.Lp*self.aero.Nv)/(self.aero.Lr*self.aero.Nv - self.aero.Lv*self.aero.Nr)
     
-    def aprox_freq (self, Iz_d, m_d, Yv_d, Nv_d, Nr_d):
+    def aprox_freq (self):
         '''
         Retorna as frequências naturais omega_d e de amortecimento zeta_d aproximadas para o Dutch Roll
-            Iz_d : momento de inércia Iz eixo aeronautico (kg*m^2)
-            m_d : massa da aeronave (kg)
-            Yv_d : derivada dimensional Yv
-            Nv_d : derivada dimensional Nv
-            Nr_d : derivada dimensional Nr
         '''
+        wd_ap = sqrt(self.aero.V*self.aero.Nv1/self.aero.Iz)                            # frequencia natural omega_d
+        cd_ap = -(self.aero.Nr1/self.aero.Iz + self.aero.Yv1/self.aero.m)/(2*wd_ap)     # frequencia de amortecimento zeta_d
 
-        self.wd_ap = sqrt(self.a.V0*Nv_d/Iz_d)                  # frequencia natural omega_d
-        self.cd_ap = -(Nr_d/Iz_d + Yv_d/m_d)/(2*self.wd_ap)     # frequencia de amortecimento zeta_d
-
-        return self.wd_ap, self.cd_ap
+        return wd_ap, cd_ap
     
     def step(self):
         '''
         Apresenta o gráfico para a resposta em step do sistema
         '''
-        
         fig, ax = plt.subplots(5, 2)
 
         # organização dos titulos na ordem em que aparecem

@@ -282,7 +282,7 @@ class Aircraft:
 
         return
     
-    def ad_mass (self, ro: float):
+    def adim_mass (self, ro: float):
         '''
         Admensionaliza a massa e os momentos de inércia em relação á asa:
             ro : densidade do ar (kg/m^3)
@@ -298,6 +298,142 @@ class Aircraft:
         
         return
     
+    def dim_derivatives (self, ro: float):
+        '''
+        Dimensionaliza as derivadas
+            ro : densidade do ar (kg/m^3)
+        '''
+        # adimensionalizadores
+        ad1 = 0.5*ro*self.V*self.w.S
+        ad2 = ad1*self.w.b
+        ad3 = ad2*self.w.b
+        ad4 = ad1*self.V
+        ad5 = ad4*self.w.b
+
+        self.Yv1 = self.Yv * ad1
+        self.Yp1 = self.Yp * ad2
+        self.Yr1 = self.Yr * ad2
+        self.Ye1 = self.Ye * ad4
+        self.Yc1 = self.Yc * ad4
+
+        self.Lv1 = self.Lv * ad2
+        self.Lp1 = self.Lp * ad3
+        self.Lr1 = self.Lr * ad3
+        self.Le1 = self.Le * ad5
+        self.Lc1 = self.Lc * ad5
+
+        self.Nv1 = self.Nv * ad2
+        self.Np1 = self.Np * ad3
+        self.Nr1 = self.Nr * ad3
+        self.Ne1 = self.Ne * ad5
+        self.Nc1 = self.Nc * ad5
+
+        return
+    
+    def derivatives (self, dCL_day, dCD_day, dCL_dah, dCDy_de, CDy, CLy, cy: list, ch: list):
+        '''
+        Calcula as derivadas adimensionais de estabilidade presentes no apêndice 8 do livro
+            dCL_day : derivada do coef de sustentação em função de alpha na coordenada y
+            dCD_day : derivada do coef de arrasto em função de alpha na coordenada y
+            dCL_dah : derivada do coef de sustentação em função de alpha na coordenada h
+            dCDy_de : derivada do coef de arrasto em função de xi (deflexão do aileron) na coordenada y
+            CDy : coef de arrasto local na coordenada y
+            CLy : coef de sustentação local na coordenada y
+            cy : corda local na coordenada y
+            ch : corda local na coordenada h
+        '''
+        def Lv_int1 ():
+            return cy * dCL_day * self.w.T * y           # Wing with Dihedral
+        
+        def Lv_int2 ():
+            return cy * y                           # wing with aft sweep
+        
+        def Yp_int ():
+            return dCL_dah * ch * h                 # fin contribution
+        
+        def Lp_int ():
+            return (dCL_day + CDy)*cy * y**2        # wing contribuiton
+        
+        def Np_int ():
+            return (CLy - dCD_day)*cy * y**2        # wing contribution
+        
+        def Lr_int ():
+            return CLy * cy * y**2                  # wing contribution
+        
+        def Nr_int ():
+            return CDy * cy * y**2                  # wing contribution
+        
+        def Le_int ():
+            return cy * ya
+        
+        def Ne_int ():
+            return dCDy_de * cy * ya
+
+        s = self.w.b/2               # pra facilitar
+
+        n1 = len(cy)    # size of wing chord data
+        n2 = len(ch)    # size of fin chord data
+
+        y = np.linspace(0, s, n1)
+        ya = np.linspace(self.a.y1, self.a.y2, n1)
+        h = np.linspace(0, self.f.b, n2)
+
+        # derivadas de "v" (sideslip)==============================================================
+        # Side force
+        self.Yv = (self.b.Sl*self.b.CDl - self.f.S*self.f.CLa)/self.w.S
+
+        # Rolling moment
+        self.Lv = -Util.trapezoidal(Lv_int1(), 0, s, n1)/(self.w.S * s)\
+                - 2*self.CLe*math.tan(self.w.V_c4)*Util.trapezoidal(Lv_int2(), 0, s, n1)/(self.w.S * s)\
+                - self.f.CLa * self.Vv * (self.hf/self.Lf)
+
+        # Yawing moment
+        self.Nv = self.f.CLa * self.Vv    #??
+
+        # derivadas de "p" (roll rate)=============================================================
+        # Side force 
+        self.Yp = -Util.trapezoidal(Yp_int(), 0, self.f.b, n2)/(self.w.S * self.w.b)
+
+        # Rolling moment
+        self.Lp =  -Util.trapezoidal(Lp_int(), 0, s, n1)/(2*self.w.S * s**2)
+
+        # Yawing moment
+        self.Np = -Util.trapezoidal(Np_int(), 0, s, n1)/(2*self.w.S * s**2)
+
+        # derivadas de "r" (yaw rate)==============================================================
+        # Side force
+        self.Yr = self.Vv*self.f.CLa      #??
+
+        # Rolling moment
+        self.Lr = Util.trapezoidal(Lr_int(), 0, s, n1)/(self.w.S * s**2)\
+                + self.f.CLa*self.Vv*(self.hf/self.w.b)
+
+        # Yawing moment
+        self.Nr = -Util.trapezoidal(Nr_int(), 0, s, n1)/(self.w.S * s**2)\
+                - self.f.CLa*self.Vv*(self.Lf/self.w.b)
+        
+        # derivadas de "e" (aileron)===============================================================
+        # Side force
+        self.Ye = 0
+
+        # Rolling moment
+        self.Le = -self.a.CLa*Util.trapezoidal(Le_int(), self.a.y1, self.a.y2, n1)/(self.w.S * s)
+        
+        # Yawing moment
+        self.Ne = Util.trapezoidal(Ne_int(), self.a.y1, self.a.y2, n1)/(self.w.S * s)
+
+        # derivadas de "c" (rudder)================================================================
+        # Side force
+        self.Yc = self.f.S*self.r.CLa/self.w.S
+
+        # Rolling moment
+        self.Lc = self.Vv*self.r.CLa*(self.hf/self.Lf)
+
+        # Yawing moment
+        self.Nc = -self.Vv*self.r.CLa
+
+        return
+
     def set_angles (self, alpha, theta):
         '''
         Ângulos:
