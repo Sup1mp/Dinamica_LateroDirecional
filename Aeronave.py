@@ -70,7 +70,7 @@ class AeroSurface:
         '''
         self.T = math.radians(T)            # angulo de diedro
         self.V_c4 = math.radians(V_c4)      # angulo de enflexamento
-        self.V_LE = math.radians(V_LE)      # angulo de enflexamento
+        self.V_LE = math.radians(V_LE)      # angulo de enflexamento no bordo de ataque
         self.inc = math.radians(inc)        # angulo de incidência
 
         return
@@ -262,7 +262,6 @@ class Body:
 
         self.CDl = -(0.00714 + 0.674*h**2/Sl)   # estimation of sideforce due to sideslip for body
         return
-
 #=======================================================================================================
 class Aircraft:
     def __init__(self, wing: Wing, fin: Fin, tail: Tail, body: Body, V):
@@ -300,7 +299,7 @@ class Aircraft:
     
     def dim_derivatives (self, ro: float):
         '''
-        Dimensionaliza as derivadas
+        Dimensionaliza as derivadas de estabilidade
             ro : densidade do ar (kg/m^3)
         '''
         # adimensionalizadores
@@ -343,25 +342,25 @@ class Aircraft:
             ch : corda local na coordenada h
         '''
         def Lv_int1 ():
-            return cy * dCL_day * self.w.T * y           # Wing with Dihedral
+            return cy * dCL_day * self.w.T * y          # Wing with Dihedral
         
         def Lv_int2 ():
-            return cy * y                           # wing with aft sweep
+            return cy * y                               # wing with aft sweep
         
         def Yp_int ():
-            return dCL_dah * ch * h                 # fin contribution
+            return dCL_dah * ch * h                     # fin contribution
         
         def Lp_int ():
-            return (dCL_day + CDy)*cy * y**2        # wing contribuiton
+            return (dCL_day + CDy)*cy * y**2            # wing contribuiton
         
         def Np_int ():
-            return (CLy - dCD_day)*cy * y**2        # wing contribution
+            return (CLy - dCD_day)*cy * y**2            # wing contribution
         
         def Lr_int ():
-            return CLy * cy * y**2                  # wing contribution
+            return CLy * cy * y**2                      # wing contribution
         
         def Nr_int ():
-            return CDy * cy * y**2                  # wing contribution
+            return CDy * cy * y**2                      # wing contribution
         
         def Le_int ():
             return cy * ya
@@ -518,18 +517,14 @@ class Aircraft:
         self.f.estimate_CLa(k, self.f.V_LE, Util.mach(self.V, T))
         # self.t.estimate_CLa(k, self.t.V_LE, Util.mach(self.V, T))
 
-        # self.CLa = self.w.CLa + self.t.CLa
-
         # CDa total da aeronave
         self.w.estimate_CDa(ro, self.V, self.m)
         self.f.estimate_CDa(ro, self.V, self.m)
         # self.t.estimate_CDa(ro, self.V, self.m)
 
-        # self.CDa = self.w.CDa + self.f.CDa + self.t.CDa
-
-        # CL de equilíbrio da aeronave
         self.CLe = 2*self.m/(ro*self.V**2 * self.w.S)
-        # equação 3.3
+        # equação 3.3 Roskam
+        
         return
     
     def get_CL_eq (self):
@@ -542,13 +537,29 @@ class Aircraft:
         '''
         Retorna CLa da aeronave
         '''
-        return self.CLa
+        return self.w.CLa + self.t.CLa
     
     def get_CDa (self):
         '''
         Retorna CDa da aeronave
         '''
-        return self.CDa
+        return self.w.CDa + self.f.CDa + self.t.CDa
+    
+    def get_derivatives (self):
+        '''
+        Retorna um dataframe com a velocidade e as derivadas
+        '''
+        name = ['V0', 'Lv', 'Lp', 'Lr', 'Le', 'Lc',\
+                 'Nv', 'Np', 'Nr', 'Ne', 'Nc',\
+                      'Yv', 'Yp', 'Yr', 'Ye', 'Yc']
+        deri = [self.V, self.Lv, self.Lp, self.Lr, self.Le, self.Lc,\
+                                    self.Nv, self.Np, self.Nr, self.Ne, self.Nc,\
+                                          self.Yv, self.Yp, self.Yr, self.Ye, self.Yc]
+        dt = DataFrame(columns= name)
+        for i in range(len(name)):
+            dt.loc[:,name[i]] = np.round(deri[i], 4)
+
+        return dt
     
     def curve (self, phi):
         '''

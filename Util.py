@@ -15,8 +15,11 @@ def mach(V, T):
     '''
     return V/np.sqrt(1.4*8.31*(T + 273.15)/0.02897)
 
-def calc_erro (real, aprox):
-    return np.round(abs((aprox - real)/real), 3)
+def erro (real, aprox):
+    return np.where(real!=0, np.round(abs((aprox - real)/real), 3), np.nan)
+
+def erro_dataframe (real: DataFrame, aprox: DataFrame):
+    return abs((aprox - real)/real.replace(0, 1))
 
 def weddle (yi, a, b):
     '''
@@ -31,9 +34,11 @@ def trapezoidal (yi: list, a: float , b: float, n: int):
     Trapezoidal Rule para calculo de integral definida entre "a" e "b" com precisão de n termos igualmente espaçados
         yi : valores de f(xi) igualmente espaçados entre "a" e "b" de modo que yi[0] = f(a) e yi[-1] = f(b)
     '''
-    if len(yi) == n:
-        return (b - a)/(2*n) * (yi[0] + yi[-1] + 2*np.sum(yi[1:-1]))
-    raise ValueError("Size of list yi not match with n")
+    match len(yi.shape):
+        case 1:
+            return (b - a)/(2*n) * (yi[0] + yi[-1] + 2*np.sum(yi[1:-1]))
+        case 2:
+            return (b - a)/(2*n) * (yi[:,0] + yi[:,-1] + 2*np.sum(yi[:,1:-1], axis=1))
 
 def get_xflr5_table (raw, index):
     values = []
