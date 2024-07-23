@@ -187,7 +187,7 @@ class Dinamica_LateroDirecional:
         '''
         Retorna as frequências naturais omega_d e de amortecimento zeta_d aproximadas para o Dutch Roll
         '''
-        wd_ap = sqrt(self.aero.V*self.aero.Nv1/self.aero.Iz)                            # frequencia natural omega_d
+        wd_ap = np.sqrt(self.aero.V*self.aero.Nv1/self.aero.Iz)                            # frequencia natural omega_d
         cd_ap = -(self.aero.Nr1/self.aero.Iz + self.aero.Yv1/self.aero.m)/(2*wd_ap)     # frequencia de amortecimento zeta_d
 
         return wd_ap, cd_ap

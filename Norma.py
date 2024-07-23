@@ -131,17 +131,17 @@ class MILF8587C:
         
         return lvl
     
-    def spiral_stability (self, t):
+    def spiral_stability (self, t_2):
         '''
         Topic 3.3.1.3
-            t : time for the bank angle to double
+            t_2 : time for the bank angle to double
         '''
         lvl = 0
-        if (t >= 12 and self.Ca in "AC") or (t >= 20 and self.Ca == "B"):
+        if (t_2 >= 12 and self.Ca in "AC") or (t_2 >= 20 and self.Ca == "B"):
             lvl = 1
-        elif t >= 8:
+        elif t_2 >= 8:
             lvl = 2
-        elif t >= 4:
+        elif t_2 >= 4:
             lvl = 3
 
         return lvl
