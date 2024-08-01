@@ -277,7 +277,7 @@ class Aircraft:
         self.f = fin
         self.t = tail
         self.b = body
-        self.V = V
+        self.V = V #if type(V) == np.ndarray else np.array([V])
 
         return
     
@@ -549,17 +549,23 @@ class Aircraft:
         '''
         Retorna um dataframe com a velocidade e as derivadas
         '''
+        # lists with names and orders
         name = ['V0', 'Lv', 'Lp', 'Lr', 'Le', 'Lc',\
-                 'Nv', 'Np', 'Nr', 'Ne', 'Nc',\
-                      'Yv', 'Yp', 'Yr', 'Ye', 'Yc']
-        deri = [self.V, self.Lv, self.Lp, self.Lr, self.Le, self.Lc,\
-                                    self.Nv, self.Np, self.Nr, self.Ne, self.Nc,\
-                                          self.Yv, self.Yp, self.Yr, self.Ye, self.Yc]
-        dt = DataFrame(columns= name)
-        for i in range(len(name)):
-            dt.loc[:,name[i]] = np.round(deri[i], 4)
+                'Nv', 'Np', 'Nr', 'Ne', 'Nc',\
+                'Yv', 'Yp', 'Yr', 'Ye', 'Yc']
+        order = [self.V, self.Lv, self.Lp, self.Lr, self.Le, self.Lc,\
+                self.Nv, self.Np, self.Nr, self.Ne, self.Nc,\
+                self.Yv, self.Yp, self.Yr, self.Ye, self.Yc]
+        
+        if type(self.V) == np.ndarray:
+            # make sure that the size stays homogeneous even with float inputs
+            deri = np.array(list(map(
+                lambda x: x if type(x) == np.ndarray else np.array([x for _ in range(len(self.V))]),
+                order))).transpose()
+        else:
+            deri = np.array([order])
 
-        return dt
+        return DataFrame(np.round(deri, 4), columns= name)
     
     def curve (self, phi):
         '''

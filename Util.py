@@ -16,10 +16,10 @@ def mach(V, T):
     return V/np.sqrt(1.4*8.31*(T + 273.15)/0.02897)
 
 def erro (real, aprox):
-    return np.where(real!=0, np.round(abs((aprox - real)/real), 3), np.nan)
+    return np.round(np.where(real!=0, abs((aprox - real)/real), abs((aprox - real))), 3)
 
 def erro_dataframe (real: DataFrame, aprox: DataFrame):
-    return abs((aprox - real)/real.replace(0, 1))
+    return np.round(abs((aprox - real)/real.replace(0, 1)), 3)
 
 def weddle (yi, a, b):
     '''
@@ -114,4 +114,15 @@ def read_span (filename):
     return span
 
 if __name__ == "__main__":
-    pass
+    # erro test
+    dn_1 = np.random.random((10))
+    dn_2 = np.array([i for i in range(0, 10)])
+    dn1 = 12.5
+    dn2 = 10
+    print(f"erro_1: {erro(dn_2, dn_1)}")
+    print(f"erro1: {erro(dn2, dn1)}")
+
+    # dataframe error test
+    ddf_1 = DataFrame(dn_1)
+    ddf_2 = DataFrame(dn_2)
+    print(f"erro_dataframe: {erro_dataframe(ddf_2, ddf_1)}")

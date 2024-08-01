@@ -43,7 +43,7 @@ class Dinamica_LateroDirecional:
             [0, 0]
         ])
 
-        return self.A, self.B
+        return np.round(self.A, 4), np.round(self.B, 4)
     
     def G (self):
         '''
@@ -169,7 +169,7 @@ class Dinamica_LateroDirecional:
             Npsi_e, Npsi_c
         ]
 
-        return self.delta, self.N
+        return np.round(self.delta, 4), self.N
     
     def aprox_Tr (self):
         '''
@@ -226,12 +226,38 @@ class Dinamica_LateroDirecional:
         wd = np.sqrt(r.real**2 + r.imag**2)
         cd = r.real / wd
 
+        plt.figure()
         plt.scatter(r.real, r.imag, c = 'k')
         plt.grid()
         plt.xlabel('$\sigma$ (rad/s)')
         plt.ylabel('$j \gamma$ (rad/s)')
 
         return wd, cd
+
+    def get_Lf_Sf (self, ro, wd, cd):
+        '''
+        Retorna uma distância Lf e uma área Sf da empenagem vertical baseado nas frequências naturais
+            ro : densidade do ar
+            wd : frequência natural
+            cd : frequência de amortecimento
+        '''
+        # baseado nas equações de aproximação das frequencias
+        A = 2*(wd**2)*self.aero.Iz/(ro*(self.aero.V**2)*self.aero.f.CLa)
+        B = -self.aero.Iz/self.aero.f.CLa * (4*wd*cd*self.aero.m/(ro*self.aero.V) + self.aero.b.Sl*self.aero.b.CDl)
+        delta = sqrt(B**2 + 4*A**2*self.aero.m*self.aero.Iz)
+
+        # distancia do CG até o CA da EV
+        Lf = [
+            (B + delta)/(2*A*self.aero.m),
+            (B - delta)/(2*A*self.aero.m)
+        ]
+
+        # área da EV
+        Sf = [
+            (2*A**2*self.aero.m)/(B + delta),
+            (2*A**2*self.aero.m)/(B - delta)
+        ]
+        return Lf, Sf
 
 if __name__ == "__main__":
     import main
