@@ -50,7 +50,7 @@ class AeroSurface:
     
     def get_CD (self, alpha):
         # Oswald's factor
-        e = 1/(1.05 + 0.007*math.pi*self.AR)    # Obert
+        e = 1/(1.05 + 0.007*math.pi*self.AR)    # Obert 5 <= AR <= 25
         # e = 1.78*(1 - 0.045*self.AR**0.68) - 0.64   # internet
         
         # pode ser deduzida a partir da equação 3.1 do "Methods for estimating stability and control\
@@ -281,22 +281,6 @@ class Aircraft:
 
         return
     
-    def adim_mass (self, ro: float):
-        '''
-        Admensionaliza a massa e os momentos de inércia em relação á asa:
-            ro : densidade do ar (kg/m^3)
-        '''
-        # adimensionalizadores
-        ad1 = 0.5*ro*self.V*self.w.S
-        ad2 = ad1*self.w.b
-
-        self.m1 = self.m/ad1                      # massa adimensional
-        self.Ix1 = self.Ix/ad2                    # momento de inercia Ix adimensional
-        self.Iz1 = self.Iz/ad2                    # momento de inercia Iz adimensional
-        self.Ixz1 = self.Ixz/ad2                  # momento de inercia Ixz adimensional
-        
-        return
-    
     def dim_derivatives (self, ro: float):
         '''
         Dimensionaliza as derivadas de estabilidade
@@ -474,18 +458,29 @@ class Aircraft:
         # # equação 13.244 do COOK
         return
     
-    def set_mass (self, mass: float, Ix: float, Iz: float, Ixz: float):
+    def set_mass (self, ro:float, mass: float, Ix: float, Iz: float, Ixz: float):
         '''
         Informa a massa e os momentos de inércia
+            ro : densidade do ar (kg/m^3)
             mass : massa da aeronave (kg)
             Ix : momento de inércia Ix eixo aeronautico (kg*m^2)
             Iz : momento de inércia Iz eixo aeronautico (kg*m^2)
             Ixz : momento de inércia Ixz eixo aeronautico (kg*m^2)
         '''
+        # dimensionais
         self.m = mass
         self.Ix = Ix
         self.Iz = Iz
         self.Ixz = Ixz
+
+        # adimensionalizadores
+        ad1 = 0.5*ro*self.V*self.w.S
+        ad2 = ad1*self.w.b
+
+        self.m1 = self.m/ad1        # massa adimensional
+        self.Ix1 = self.Ix/ad2      # momento de inercia Ix adimensional
+        self.Iz1 = self.Iz/ad2      # momento de inercia Iz adimensional
+        self.Ixz1 = self.Ixz/ad2    # momento de inercia Ixz adimensional
 
         return
     

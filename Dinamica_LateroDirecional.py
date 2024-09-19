@@ -1,6 +1,5 @@
 import numpy as np
 from scipy import signal
-from math import sin, cos, sqrt
 import matplotlib.pyplot as plt
 
 from Aeronave import Aircraft
@@ -13,7 +12,6 @@ class Dinamica_LateroDirecional:
         self.aero = aero
         return
 
-    # def matriz_A (self, Yv:float, Lv:float, Nv:float, Yp:float, Lp:float, Np:float, Yr:float, Lr:float, Nr:float):
     def A_B (self):
         '''
         Calcula as matrizes "A" e "B" utilizando as derivadas adimensionais do apêndice 8 do mesmo livro 
@@ -22,16 +20,19 @@ class Dinamica_LateroDirecional:
         g = 9.81    # gravidade
 
         # voo reto e simétrico permite essa simplificação
-        Ue = self.aero.V*cos(self.aero.theta)
-        We = self.aero.V*sin(self.aero.theta)
+        Ue = self.aero.V*np.cos(self.aero.theta)
+        We = self.aero.V*np.sin(self.aero.theta)
+
+        z = np.zeros((len(self.aero.V))) if type(self.aero.V) == np.ndarray else 0  # vetor de 0
+        o = np.ones((len(self.aero.V)))  if type(self.aero.V) == np.ndarray else 1  # vetor de 1
 
         # matriz de estabilidade
         self.A = np.array([
-            [self.aero.Yv/self.aero.m1, (self.aero.Yp*self.aero.w.b + self.aero.m1*We)/self.aero.m1, (self.aero.Yr*self.aero.w.b - self.aero.m1*Ue)/self.aero.m1, g*cos(self.aero.theta), g*sin(self.aero.theta)],
-            [(self.aero.Ixz1*self.aero.Nv + self.aero.Iz1*self.aero.Lv)/a1, (self.aero.Ixz1*self.aero.Np + self.aero.Iz1*self.aero.Lp)*self.aero.w.b/a1, (self.aero.Ixz1*self.aero.Nr + self.aero.Iz1*self.aero.Lr)*self.aero.w.b/a1, 0, 0],
-            [(self.aero.Ix1*self.aero.Nv + self.aero.Ixz1*self.aero.Lv)/a1, (self.aero.Ix1*self.aero.Np + self.aero.Ixz1*self.aero.Lp)*self.aero.w.b/a1, (self.aero.Ix1*self.aero.Nr + self.aero.Ixz1*self.aero.Lr)*self.aero.w.b/a1, 0, 0],
-            [0, 1, 0, 0, 0],
-            [0, 0, 1, 0, 0]
+            [self.aero.Yv/self.aero.m1, (self.aero.Yp*self.aero.w.b + self.aero.m1*We)/self.aero.m1, (self.aero.Yr*self.aero.w.b - self.aero.m1*Ue)/self.aero.m1, g*np.cos(self.aero.theta), g*np.sin(self.aero.theta)],
+            [(self.aero.Ixz1*self.aero.Nv + self.aero.Iz1*self.aero.Lv)/a1, (self.aero.Ixz1*self.aero.Np + self.aero.Iz1*self.aero.Lp)*self.aero.w.b/a1, (self.aero.Ixz1*self.aero.Nr + self.aero.Iz1*self.aero.Lr)*self.aero.w.b/a1, z, z],
+            [(self.aero.Ix1*self.aero.Nv + self.aero.Ixz1*self.aero.Lv)/a1, (self.aero.Ix1*self.aero.Np + self.aero.Ixz1*self.aero.Lp)*self.aero.w.b/a1, (self.aero.Ix1*self.aero.Nr + self.aero.Ixz1*self.aero.Lr)*self.aero.w.b/a1, z, z],
+            [z, o, z, z, z],
+            [z, z, o, z, z]
         ])
 
         # matriz de controle
@@ -39,8 +40,8 @@ class Dinamica_LateroDirecional:
             [self.aero.Ye/self.aero.m1, self.aero.Yc/self.aero.m1],
             [(self.aero.Ixz1*self.aero.Ne + self.aero.Iz1*self.aero.Le)/a1, (self.aero.Ixz1*self.aero.Nc + self.aero.Iz1*self.aero.Lc)/a1],
             [(self.aero.Ix1*self.aero.Ne + self.aero.Ixz1*self.aero.Le)/a1, (self.aero.Ix1*self.aero.Nc + self.aero.Ixz1*self.aero.Lc)/a1],
-            [0, 0],
-            [0, 0]
+            [z, z],
+            [z, z]
         ])
 
         return np.round(self.A, 4), np.round(self.B, 4)
@@ -170,7 +171,30 @@ class Dinamica_LateroDirecional:
         ]
 
         return np.round(self.delta, 4), self.N
-    
+
+    # def g (self):
+    #     import sympy as sym
+    #     from sympy import pprint
+    #     from sympy.abc import s
+
+    #     def gg (A, B):
+    #         d = s*sym.eye(5) - A
+    #         f = sym.Poly(sym.simplify(d.det()))
+            
+    #         pprint(f)
+    #         delt = sym.Poly(d.det(), domain='ZZ')
+    #         n = d.adjoint()*sym.Matrix(B)
+    #         return delt, n
+        
+    #     shape = np.shape(self.A)
+    #     if len(shape) == 3:
+    #         for i in range(shape[2]):
+    #             d, n = gg(self.A[:, :, i], self.B[:, :, i])
+    #     else:
+    #         self.delta, self.N = gg(self.A, self.B)
+
+    #     return np.round(self.delta, 4), self.N
+
     def aprox_Tr (self):
         '''
         Retorna a constante de tempo Tr do Roll Mode aproximada
@@ -244,7 +268,7 @@ class Dinamica_LateroDirecional:
         # baseado nas equações de aproximação das frequencias
         A = 2*(wd**2)*self.aero.Iz/(ro*(self.aero.V**2)*self.aero.f.CLa)
         B = -self.aero.Iz/self.aero.f.CLa * (4*wd*cd*self.aero.m/(ro*self.aero.V) + self.aero.b.Sl*self.aero.b.CDl)
-        delta = sqrt(B**2 + 4*A**2*self.aero.m*self.aero.Iz)
+        delta = np.sqrt(B**2 + 4*A**2*self.aero.m*self.aero.Iz)
 
         # distancia do CG até o CA da EV
         Lf = [

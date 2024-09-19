@@ -134,9 +134,12 @@ a.derivatives(
     ch = ch
 )
 deri = a.get_derivatives()
-print(f"Referência:\n{real}")
+err = Util.erro_dataframe(real, deri)
+# print(f"Referência:\n{real}")
 print(f"Calculado:\n{deri}")
-print(f"Erro:\n{Util.erro_dataframe(real, deri)}")
+print(f"Erro:\n{err}")
+sts = np.round(err.describe(), 4)
+print(f"Stats:\n{sts.loc['mean']}\nMean sum: {sts.loc['mean'].sum()}")
 
 a.dim_derivatives(ro = ro)  # dimensionaliza derivadas
 

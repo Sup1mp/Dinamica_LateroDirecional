@@ -21,6 +21,19 @@ def erro (real, aprox):
 def erro_dataframe (real: DataFrame, aprox: DataFrame):
     return np.round(abs((aprox - real)/real.replace(0, 1)), 3)
 
+def compare_derivatives(ref, calc):
+    err = erro_dataframe(ref, calc)
+    
+    # plot dos dados obtidos
+    print(f"Referência:\n{ref}")
+    print(f"Calculado:\n{calc}")
+    print(f"Erro percentual:\n{err}")
+
+    # status formais
+    sts = np.round(err.describe(), 4)
+    print(f"Stats:\n{sts.loc['mean']}\nMean sum: {sts.loc['mean'].sum()}")
+    return
+
 def weddle (yi, a, b):
     '''
     Weddle's Rule para calculo de integral definida entre "a" e "b" com n = 5 com 7 termos (5 a mais)
