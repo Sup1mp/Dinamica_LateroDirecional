@@ -279,7 +279,8 @@ class Aircraft:
         self.b = body
         self.V = V
 
-        self.many_velocities = True if type(self.V) == np.ndarray else False
+        self._many_velocities = True if type(self.V) == np.ndarray else False
+        self._len_velocities = len(self.V) if self._many_velocities else 1
 
         return
     
@@ -547,7 +548,7 @@ class Aircraft:
                 self.Nv, self.Np, self.Nr, self.Ne, self.Nc,\
                 self.Yv, self.Yp, self.Yr, self.Ye, self.Yc]
         
-        if type(self.V) == np.ndarray:
+        if self._many_velocities:
             # make sure that the size stays homogeneous even with float inputs
             deri = np.array(list(map(
                 lambda x: x if type(x) == np.ndarray else np.array([x for _ in range(len(self.V))]),

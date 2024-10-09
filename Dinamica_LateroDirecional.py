@@ -11,9 +11,8 @@ class Dinamica_LateroDirecional:
         '''
         self.aero = aero
 
-        self.many_velocities = True if type(self.aero.V) == np.ndarray else False
-        self.z = np.zeros((len(self.aero.V))) if self.many_velocities else 0  # vetor de 0
-        self.o = np.ones((len(self.aero.V)))  if self.many_velocities else 1  # vetor de 1
+        self.z = np.zeros((self.aero._len_velocities)) if self.aero._many_velocities else 0  # vetor de 0
+        self.o = np.ones((self.aero._len_velocities))  if self.aero._many_velocities else 1  # vetor de 1
 
         return
 
@@ -53,7 +52,7 @@ class Dinamica_LateroDirecional:
         Retorna a equação caracteristica (delta) e a matriz de polinomios (N) para cada variavel utilizando
         as equações 
         '''
-        if self.many_velocities:
+        if self.aero._many_velocities:
             yv = self.A[0,0,:]
             yp = self.A[0,1,:]
             yr = self.A[0,2,:]
@@ -241,7 +240,7 @@ class Dinamica_LateroDirecional:
 
         return wd_ap, cd_ap
     
-    def step(self, tmax = 60):
+    def step(self, tmax = 30):
         '''
         Apresenta o gráfico para a resposta em step do sistema
         '''
@@ -256,13 +255,13 @@ class Dinamica_LateroDirecional:
         ]
 
         for i in range(10):
-            for j in range(len(self.aero.V) if self.many_velocities else 1):
+            for j in range(self.aero._len_velocities):
                 
                 # step response
-                if self.many_velocities:
-                    t, y = signal.step(signal.lti(self.N[i][j], self.delta[j, :]), T=np.linspace(0, tmax, tmax*100))
+                if self.aero._many_velocities:
+                    t, y = signal.step(signal.lti(self.N[i][j], self.delta[j, :]), T=np.linspace(0, tmax, tmax*10))
                 else:
-                    t, y = signal.step(signal.lti(self.N[i], self.delta), T=np.linspace(0, tmax))
+                    t, y = signal.step(signal.lti(self.N[i], self.delta), T=np.linspace(0, tmax*10))
 
                 # coloca as legendas e o nome de cada gráfico
                 ax[i//2][i%2].plot(t, y)
@@ -276,17 +275,25 @@ class Dinamica_LateroDirecional:
         return
     
     def root_map (self):
+        '''
+        Apresenta o gráfico dos polos e zeros do polinômio característico
+        '''
+        # raizes do polinomio caracteristico
+        if self.aero._many_velocities:
+            r = np.array([np.roots(self.delta[i]) for i in range(self.aero._len_velocities)])
+        else:
+            r = np.roots(self.delta)
 
-        r = np.roots(self.delta)
-
-        wd = np.sqrt(r.real**2 + r.imag**2)
-        cd = r.real / wd
+        wd = np.sqrt(r.real**2 + r.imag**2)     # frequência natural
+        cd = r.real / wd                        # frequência de amortecimento
 
         plt.figure()
-        plt.scatter(r.real, r.imag, c = 'k')
+        for i in range(self.aero._len_velocities):
+            plt.scatter(r[i].real, r[i].imag)
         plt.grid()
         plt.xlabel('$\sigma$ (rad/s)')
         plt.ylabel('$j \gamma$ (rad/s)')
+        plt.legend([f"{self.aero.V[jj]} m/s" for jj in range(self.aero._len_velocities)])
 
         return wd, cd
 
