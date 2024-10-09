@@ -141,8 +141,6 @@ print(f"Erro:\n{err}")
 sts = np.round(err.describe(), 4)
 print(f"Stats:\n{sts.loc['mean']}\nMean sum: {sts.loc['mean'].sum()}")
 
-a.dim_derivatives(ro = ro)  # dimensionaliza derivadas
-
 # DINAMICA
 from Dinamica_LateroDirecional import Dinamica_LateroDirecional
 din = Dinamica_LateroDirecional(a)

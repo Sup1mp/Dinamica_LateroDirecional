@@ -80,13 +80,11 @@ b = Body(
 #==================================================================================================
 a = Aircraft(w, f, t, b, V = V0)
 a.set_mass(
+    ro = ro,
     mass = 318,
     Ix = 1370,
     Iz = 1770,
     Ixz = -4.1
-)
-a.adim_mass(
-    ro = ro
 )
 a.set_angles(
     alpha = alpha_e,
@@ -127,8 +125,6 @@ deri = a.get_derivatives()  # organiza as derivadas em dataframe
 print(f"Referência:\n{real}")
 print(f"Calculado:\n{deri}")
 print(f"Erro:\n{erro_dataframe(real, deri)}")
-
-a.dim_derivatives(ro = ro)  # dimensionaliza derivadas
 
 #==================================================================================================
 # DINAMICA

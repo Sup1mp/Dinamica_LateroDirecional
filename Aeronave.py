@@ -267,49 +267,19 @@ class Aircraft:
     def __init__(self, wing: Wing, fin: Fin, tail: Tail, body: Body, V):
         '''
         Aircraft:
-            wing : asa
-            fin : empenagem vertical
-            tail : empenagem horizontal
-            body : fuselagem
+            wing : asa obj
+            fin : empenagem vertical obj
+            tail : empenagem horizontal obj
+            body : fuselagem obj
             V : velocidade (m/s)
         '''
         self.w = wing
         self.f = fin
         self.t = tail
         self.b = body
-        self.V = V #if type(V) == np.ndarray else np.array([V])
+        self.V = V
 
-        return
-    
-    def dim_derivatives (self, ro: float):
-        '''
-        Dimensionaliza as derivadas de estabilidade
-            ro : densidade do ar (kg/m^3)
-        '''
-        # adimensionalizadores
-        ad1 = 0.5*ro*self.V*self.w.S
-        ad2 = ad1*self.w.b
-        ad3 = ad2*self.w.b
-        ad4 = ad1*self.V
-        ad5 = ad4*self.w.b
-
-        self.Yv1 = self.Yv * ad1
-        self.Yp1 = self.Yp * ad2
-        self.Yr1 = self.Yr * ad2
-        self.Ye1 = self.Ye * ad4
-        self.Yc1 = self.Yc * ad4
-
-        self.Lv1 = self.Lv * ad2
-        self.Lp1 = self.Lp * ad3
-        self.Lr1 = self.Lr * ad3
-        self.Le1 = self.Le * ad5
-        self.Lc1 = self.Lc * ad5
-
-        self.Nv1 = self.Nv * ad2
-        self.Np1 = self.Np * ad3
-        self.Nr1 = self.Nr * ad3
-        self.Ne1 = self.Ne * ad5
-        self.Nc1 = self.Nc * ad5
+        self.many_velocities = True if type(self.V) == np.ndarray else False
 
         return
     
@@ -415,6 +385,28 @@ class Aircraft:
         # Yawing moment
         self.Nc = -self.Vv*self.r.CLa
 
+        # Dimensionalização =======================================================================
+        # side force
+        self.Yv1 = self.Yv * self._ad1
+        self.Yp1 = self.Yp * self._ad2
+        self.Yr1 = self.Yr * self._ad2
+        self.Ye1 = self.Ye * self._ad4
+        self.Yc1 = self.Yc * self._ad4
+
+        # rolling moment
+        self.Lv1 = self.Lv * self._ad2
+        self.Lp1 = self.Lp * self._ad3
+        self.Lr1 = self.Lr * self._ad3
+        self.Le1 = self.Le * self._ad5
+        self.Lc1 = self.Lc * self._ad5
+
+        # yawing moment
+        self.Nv1 = self.Nv * self._ad2
+        self.Np1 = self.Np * self._ad3
+        self.Nr1 = self.Nr * self._ad3
+        self.Ne1 = self.Ne * self._ad5
+        self.Nc1 = self.Nc * self._ad5
+
         return
 
     def set_angles (self, alpha, theta):
@@ -430,9 +422,9 @@ class Aircraft:
     def set_control (self, aileron: Aileron, elevator: Elevator, rudder : Rudder):
         '''
         Recebe as superfícies de controle da aeronave
-            aileron : aileron (Asa)
-            elevator : profundor (EH)
-            rudder : leme (EV)
+            aileron : aileron obj
+            elevator : profundor obj
+            rudder : leme obj
         '''
         self.a = aileron
         self.e = elevator
@@ -474,13 +466,16 @@ class Aircraft:
         self.Ixz = Ixz
 
         # adimensionalizadores
-        ad1 = 0.5*ro*self.V*self.w.S
-        ad2 = ad1*self.w.b
+        self._ad1 = 0.5*ro*self.V*self.w.S
+        self._ad2 = self._ad1*self.w.b
+        self._ad3 = self._ad2*self.w.b
+        self._ad4 = self._ad1*self.V
+        self._ad5 = self._ad4*self.w.b
 
-        self.m1 = self.m/ad1        # massa adimensional
-        self.Ix1 = self.Ix/ad2      # momento de inercia Ix adimensional
-        self.Iz1 = self.Iz/ad2      # momento de inercia Iz adimensional
-        self.Ixz1 = self.Ixz/ad2    # momento de inercia Ixz adimensional
+        self.m1 = self.m/self._ad1        # massa adimensional
+        self.Ix1 = self.Ix/self._ad2      # momento de inercia Ix adimensional
+        self.Iz1 = self.Iz/self._ad2      # momento de inercia Iz adimensional
+        self.Ixz1 = self.Ixz/self._ad2    # momento de inercia Ixz adimensional
 
         return
     

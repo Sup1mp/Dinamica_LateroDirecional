@@ -10,6 +10,11 @@ class Dinamica_LateroDirecional:
         Classe da Dinâmica Latero-Direcional de aeronaves que utiliza as equações e métodos presentes no COOK et. al (2013)
         '''
         self.aero = aero
+
+        self.many_velocities = True if type(self.aero.V) == np.ndarray else False
+        self.z = np.zeros((len(self.aero.V))) if self.many_velocities else 0  # vetor de 0
+        self.o = np.ones((len(self.aero.V)))  if self.many_velocities else 1  # vetor de 1
+
         return
 
     def A_B (self):
@@ -23,16 +28,13 @@ class Dinamica_LateroDirecional:
         Ue = self.aero.V*np.cos(self.aero.theta)
         We = self.aero.V*np.sin(self.aero.theta)
 
-        z = np.zeros((len(self.aero.V))) if type(self.aero.V) == np.ndarray else 0  # vetor de 0
-        o = np.ones((len(self.aero.V)))  if type(self.aero.V) == np.ndarray else 1  # vetor de 1
-
         # matriz de estabilidade
         self.A = np.array([
             [self.aero.Yv/self.aero.m1, (self.aero.Yp*self.aero.w.b + self.aero.m1*We)/self.aero.m1, (self.aero.Yr*self.aero.w.b - self.aero.m1*Ue)/self.aero.m1, g*np.cos(self.aero.theta), g*np.sin(self.aero.theta)],
-            [(self.aero.Ixz1*self.aero.Nv + self.aero.Iz1*self.aero.Lv)/a1, (self.aero.Ixz1*self.aero.Np + self.aero.Iz1*self.aero.Lp)*self.aero.w.b/a1, (self.aero.Ixz1*self.aero.Nr + self.aero.Iz1*self.aero.Lr)*self.aero.w.b/a1, z, z],
-            [(self.aero.Ix1*self.aero.Nv + self.aero.Ixz1*self.aero.Lv)/a1, (self.aero.Ix1*self.aero.Np + self.aero.Ixz1*self.aero.Lp)*self.aero.w.b/a1, (self.aero.Ix1*self.aero.Nr + self.aero.Ixz1*self.aero.Lr)*self.aero.w.b/a1, z, z],
-            [z, o, z, z, z],
-            [z, z, o, z, z]
+            [(self.aero.Ixz1*self.aero.Nv + self.aero.Iz1*self.aero.Lv)/a1, (self.aero.Ixz1*self.aero.Np + self.aero.Iz1*self.aero.Lp)*self.aero.w.b/a1, (self.aero.Ixz1*self.aero.Nr + self.aero.Iz1*self.aero.Lr)*self.aero.w.b/a1, self.z, self.z],
+            [(self.aero.Ix1*self.aero.Nv + self.aero.Ixz1*self.aero.Lv)/a1, (self.aero.Ix1*self.aero.Np + self.aero.Ixz1*self.aero.Lp)*self.aero.w.b/a1, (self.aero.Ix1*self.aero.Nr + self.aero.Ixz1*self.aero.Lr)*self.aero.w.b/a1, self.z, self.z],
+            [self.z, self.o, self.z, self.z, self.z],
+            [self.z, self.z, self.o, self.z, self.z]
         ])
 
         # matriz de controle
@@ -40,8 +42,8 @@ class Dinamica_LateroDirecional:
             [self.aero.Ye/self.aero.m1, self.aero.Yc/self.aero.m1],
             [(self.aero.Ixz1*self.aero.Ne + self.aero.Iz1*self.aero.Le)/a1, (self.aero.Ixz1*self.aero.Nc + self.aero.Iz1*self.aero.Lc)/a1],
             [(self.aero.Ix1*self.aero.Ne + self.aero.Ixz1*self.aero.Le)/a1, (self.aero.Ix1*self.aero.Nc + self.aero.Ixz1*self.aero.Lc)/a1],
-            [z, z],
-            [z, z]
+            [self.z, self.z],
+            [self.z, self.z]
         ])
 
         return np.round(self.A, 4), np.round(self.B, 4)
@@ -51,46 +53,69 @@ class Dinamica_LateroDirecional:
         Retorna a equação caracteristica (delta) e a matriz de polinomios (N) para cada variavel utilizando
         as equações 
         '''
+        if self.many_velocities:
+            yv = self.A[0,0,:]
+            yp = self.A[0,1,:]
+            yr = self.A[0,2,:]
+            yphi = self.A[0,3,:]
+            ypsi = self.A[0,4,:]
 
-        yv = self.A[0,0]
-        yp = self.A[0,1]
-        yr = self.A[0,2]
-        yphi = self.A[0,3]
-        ypsi = self.A[0,4]
+            lv = self.A[1,0,:]
+            lp = self.A[1,1,:]
+            lr = self.A[1,2,:]
 
-        lv = self.A[1,0]
-        lp = self.A[1,1]
-        lr = self.A[1,2]
+            nv = self.A[2,0,:]
+            npp = self.A[2,1,:]
+            nr = self.A[2,2,:]
 
-        nv = self.A[2,0]
-        npp = self.A[2,1]
-        nr = self.A[2,2]
+            ye = self.B[0,0,:]
+            yc = self.B[0,1,:]
 
-        ye = self.B[0,0]
-        yc = self.B[0,1]
+            le = self.B[1,0,:]
+            lc = self.B[1,1,:]
 
-        le = self.B[1,0]
-        lc = self.B[1,1]
+            ne = self.B[2,0,:]
+            nc = self.B[2,1,:]
+        else:
+            yv = self.A[0,0]
+            yp = self.A[0,1]
+            yr = self.A[0,2]
+            yphi = self.A[0,3]
+            ypsi = self.A[0,4]
 
-        ne = self.B[2,0]
-        nc = self.B[2,1]
+            lv = self.A[1,0]
+            lp = self.A[1,1]
+            lr = self.A[1,2]
+
+            nv = self.A[2,0]
+            npp = self.A[2,1]
+            nr = self.A[2,2]
+
+            ye = self.B[0,0]
+            yc = self.B[0,1]
+
+            le = self.B[1,0]
+            lc = self.B[1,1]
+
+            ne = self.B[2,0]
+            nc = self.B[2,1]
 
         # polinomio caracteristico 
         self.delta = np.array([
-            1,
+            self.o,
             -(lp + nr + yv),
             (lp*nr - lr*npp) + (nr*yv - nv*yr) + (lp*yv - lv*yp),
             lv*(nr*yp - npp*yr - yphi) + nv*(lp*yr - lr*yp - ypsi) + yv*(lr*npp - lp*nr),
             lv*(nr*yphi - npp*ypsi) + nv*(lp*ypsi - lr*yphi),
-            0
-        ])
+            self.z
+        ]).transpose()
 
         Nv_e = np.array([
             ye,
             le*yp + ne*yr - ye*(lp + nr),
             le*(npp*yr - nr*yp + yphi) + ne*(lr*yp - lp*yr + ypsi) + ye*(lp*nr - lr*npp),
             le*(npp*ypsi - nr*yphi) + ne*(lr*yphi - lp*ypsi),
-            0
+            self.z
         ])
 
         Nv_c = np.array([
@@ -98,7 +123,7 @@ class Dinamica_LateroDirecional:
             lc*yp + nc*yr - yc*(lp + nr),
             lc*(npp*yr - nr*yp + yphi) + nc*(lr*yp - lp*yr + ypsi) + yc*(lp*nr - lr*npp),
             lc*(npp*ypsi - nr*yphi) + nc*(lr*yphi - lp*ypsi),
-            0
+            self.z
         ])
 
         Np_e = np.array([
@@ -106,7 +131,7 @@ class Dinamica_LateroDirecional:
             -le*(nr + yv) + ne*lr + ye*lv,
             le*(nr*yv - nv*yr) + ne*(lv*yr - lr*yv) + ye*(lr*nv - lv*nr),
             -le*nv*ypsi + ne*lv*ypsi,
-            0
+            self.z
         ])
 
         Np_c = np.array([
@@ -114,7 +139,7 @@ class Dinamica_LateroDirecional:
             -lc*(nr + yv) + nc*lr + yc*lv,
             lc*(nr*yv - nv*yr) + nc*(lv*yr - lr*yv) + yc*(lr*nv - lv*nr),
             -lc*nv*ypsi + nc*lv*ypsi,
-            0
+            self.z
         ])
 
         Nphi_e = np.array([
@@ -136,7 +161,7 @@ class Dinamica_LateroDirecional:
             le*npp - ne*(lp + yv) + ye*nv,
             le*(nv*yp - npp*yv) + ne*(lp*yv - lv*yp) + ye*(lv*npp - lp*nv),
             le*nv*yphi - ne*lv*yphi,
-            0
+            self.z
         ])
 
         Nr_c = np.array([
@@ -144,7 +169,7 @@ class Dinamica_LateroDirecional:
             lc*npp - nc*(lp + yv) + yc*nv,
             lc*(nv*yp - npp*yv) + nc*(lp*yv - lv*yp) + yc*(lv*npp - lp*nv),
             lc*nv*yphi - nc*lv*yphi,
-            0
+            self.z
         ])
 
         Npsi_e = np.array([
@@ -163,14 +188,14 @@ class Dinamica_LateroDirecional:
 
         # matrix N
         self.N = [
-            Nv_e, Nv_c,
-            Np_e, Np_c,
-            Nr_e, Nr_c,
-            Nphi_e, Nphi_c,
-            Npsi_e, Npsi_c
+            Nv_e.transpose(), Nv_c.transpose(),
+            Np_e.transpose(), Np_c.transpose(),
+            Nr_e.transpose(), Nr_c.transpose(),
+            Nphi_e.transpose(), Nphi_c.transpose(),
+            Npsi_e.transpose(), Npsi_c.transpose()
         ]
 
-        return np.round(self.delta, 4), self.N
+        return self.delta, self.N
 
     # def g (self):
     #     import sympy as sym
@@ -216,7 +241,7 @@ class Dinamica_LateroDirecional:
 
         return wd_ap, cd_ap
     
-    def step(self):
+    def step(self, tmax = 60):
         '''
         Apresenta o gráfico para a resposta em step do sistema
         '''
@@ -230,14 +255,21 @@ class Dinamica_LateroDirecional:
                   '$\psi_{\epsilon}$ (rad)', '$\psi_{\zeta}$ (rad)'
         ]
 
-        for i in range(len(self.N)):
+        for i in range(10):
+            for j in range(len(self.aero.V) if self.many_velocities else 1):
+                
+                # step response
+                if self.many_velocities:
+                    t, y = signal.step(signal.lti(self.N[i][j], self.delta[j, :]), T=np.linspace(0, tmax, tmax*100))
+                else:
+                    t, y = signal.step(signal.lti(self.N[i], self.delta), T=np.linspace(0, tmax))
 
-            t, y = signal.step(signal.lti(self.N[i], self.delta))   # step response
-
-            # coloca as legendas e o nome de cada gráfico
-            ax[i//2][i%2].plot(t, y, 'k')
+                # coloca as legendas e o nome de cada gráfico
+                ax[i//2][i%2].plot(t, y)
             ax[i//2][i%2].set(ylabel=titles[i])
             ax[i//2][i%2].grid()
+            ax[i//2][i%2].set_xlim([0, tmax])
+            # ax[i//2][i%2].legend([f"{self.aero.V[jj]} m/s" for jj in range(len(self.aero.V))])
         
         fig.tight_layout()  # ajusta o tamanho
 
