@@ -120,8 +120,19 @@ class ControlSurface:
     def set_CLa (self, CLa):
         '''
         Coef de sustentaçãoe em função de alpha
+            M : numero de mach
         '''
         self.CLa = CLa
+        
+        # Cla_Clat = 1.05*K / np.sqrt(1 - M**2)
+        # # equação B.1,1 do Etkins
+
+        # cf_c = self.c/surf.mac
+
+        # t_c = surf.th/surf.mac
+
+        # self.CLa = Cld*(CLa/Cla)*K1*K2
+        # # apêndice B.2 do Etkins
         return
     
     def TAU (self, S):
