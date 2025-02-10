@@ -3,7 +3,7 @@ import Aeronave as A
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-import Util
+import Util.Util as Util
 
 # exemplo 13.1 COOK (todas as velocidades)
 V0 = np.array([round(i*0.5144444, 3) for i in range(35, 90, 5)])

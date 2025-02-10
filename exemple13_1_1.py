@@ -3,7 +3,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-from Util import erro_dataframe
+from Util.Util import erro_dataframe
 from Aeronave import *
 
 # exemplo 13.1 COOK (1 velocidade)

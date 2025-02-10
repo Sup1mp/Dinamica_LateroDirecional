@@ -3,7 +3,7 @@ import Aeronave as A
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-import Util
+import Util.Util as Util
 
 V0 = np.array([round(i*0.5144444, 3) for i in range(35, 90, 5)])
 alpha_e = np.array([9.209, 6.161, 4.072, 2.577, 1.471, 0.63, -0.025, -0.544, -0.963, -1.306, -1.59])

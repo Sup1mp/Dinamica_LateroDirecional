@@ -1,7 +1,7 @@
 import math
 import numpy as np
 from pandas import DataFrame
-import Util
+import Util.Util as Util
 
 #=======================================================================================================
 class AeroSurface:
