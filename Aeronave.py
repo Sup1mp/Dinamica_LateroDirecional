@@ -2,6 +2,7 @@ import math
 import numpy as np
 from pandas import DataFrame
 import Util.Util as Util
+from Util import cFit
 
 #=======================================================================================================
 class AeroSurface:
@@ -23,7 +24,13 @@ class AeroSurface:
         self.lbd = self.c12[1] / self.c12[0]            # afilamento
 
         self.set_angles()   # ângulos = 0
+        self.__coefs__()    # inicializa coeficientes nulos
 
+        return
+    
+    def __coefs__(self):
+        self.CL0 = self.CLa = None
+        self.CD0 = self.CDa = None
         return
     
     def set_CL (self, CL0, CLa):
@@ -62,7 +69,7 @@ class AeroSurface:
 
     def set_angles (self, T: float = 0, V_c4: float = 0, V_LE: float = 0, inc: float = 0):
         '''
-        Ângulos:
+        Ângulos (se não declarados são considerados 0°):
             T : ang diedro (deg)
             V_c4 : ang enflexamento a 1/4 da corda (deg)
             V_LE : ang de enflexamento no bordo de ataque (deg)
@@ -117,26 +124,42 @@ class ControlSurface:
         self.c = c
         return
     
-    def set_CLd (self, surf, M, cf_c, t_c):
+    def set_CLd (self, CLd):
+        self.CLd = CLd
+        return
+    
+    def set_CLa (self, CLa):
+        self.CLa = CLa
+        return
+    
+    def estimate_CLa (self, surf, M):
+        '''
+        Coef de sustentação em função de alpha 
+            surf : superfície aerodinâmica onde o controle se encontra
+            M : numero de mach
+        '''
+
+        K = 1
+
+        # CLa teórico
+        Cla_t = cFit.Cla_t(surf.th/surf.mac)
+
+        self.CLa = 1.05*K*Cla_t/ np.sqrt(1 - M**2)
+        # Equação B.1,1 do Etkins
+        return
+    
+    def estimate_CLd (self, surf, cf_c, t_c):
         '''
         Coef de sustentaçãoe em função da deflexão delta
-            surf : superfície aerodinâmica
-            M : numero de mach
+            surf : superfície aerodinâmica onde o controle se encontra
             cf_c : razão entre a corda da superfície de controle e a corda do perfil em que está
             t_c : razão da espessura pela corda do perfil aerodinâmico
         '''
 
-        K = 1
-        
-        # CLa teórico
-        Cla_t = Util.Cla_t(surf.th/surf.mac)
+        K1 = cFit.K1(cf_c, surf.AR)
+        Cld = cFit.Cld(t_c, cf_c, cFit.Cla_t(surf.th/surf.mac)/self.CLa)
 
-        Cla = 1.05*K*Cla_t/ np.sqrt(1 - M**2)
-        # Equação B.1,1 do Etkins
-
-        K1 = Util.K1(cf_c, surf.AR)
-
-        self.CLd = Util.Cld_Cld_t(cf_c, Cla_t/Cla) * Util.Cld_t(t_c, cf_c) * (surf.CLa/Cla)*K1
+        self.CLd = Cld * (surf.CLa/self.CLa) * K1
         # apêndice B.2 do Etkins
         return
     
@@ -159,18 +182,17 @@ class Rudder (ControlSurface):
         super().__init__(S, c)
         return
     
-    def set_CLd (self, surf, M, cf_c, t_c, f = 1):
+    def estimate_CLd (self, surf, cf_c, t_c, f = 1):
         '''
         Coef de sustentaçãoe em função da deflexão delta do leme\
         corrigido pelo efeito geométrico da EV usando o método descrito\
         em Abbot and Von Doenhoff (1959):
-            surf : superfície aerodinâmica
-            M : numero de mach
+            surf : superfície aerodinâmica onde o controle se encontra
             cf_c : razão entre a corda da superfície de controle e a corda do perfil em que está
             t_c : razão da espessura pela corda do perfil aerodinâmico
             f : fator de correção empirico
         '''
-        super().set_CLd(surf, M, cf_c, t_c)
+        super().estimate_CLd(surf, cf_c, t_c)
 
         self.CLd = f*self.CLd/(1 + self.CLd/(math.pi*surf.AR))
         # equação 13.254 COOK
@@ -200,16 +222,15 @@ class Aileron (ControlSurface):
         self.y2 = y2
         return
     
-    def set_CLd(self, surf, M, cf_c, t_c):
+    def estimate_CLd(self, surf, cf_c, t_c):
         '''
         Coef de sustentaçãoe em função da deflexão delta
-            surf : superfície aerodinâmica
-            M : numero de mach
+            surf : superfície aerodinâmica onde o controle se encontra
             cf_c : razão entre a corda da superfície de controle e a corda do perfil em que está
             t_c : razão da espessura pela corda do perfil aerodinâmico
         '''
-        super().set_CLd(surf, M, cf_c, t_c)
-        self.CLd = self.CLd * Util.K2(self.y1, self.y2, surf.b, surf.lbd)
+        super().estimate_CLd(surf, cf_c, t_c)
+        self.CLd = self.CLd * cFit.K2(self.y1, self.y2, surf.b, surf.lbd)
         # equação do apêndice B.2 do Etikins
         return
 #=======================================================================================================
@@ -512,6 +533,10 @@ class Aircraft:
         self.Iz1 = self.Iz/self._ad2      # momento de inercia Iz adimensional
         self.Ixz1 = self.Ixz/self._ad2    # momento de inercia Ixz adimensional
 
+        # coeficiente de sustentação de equilibrio da aeronave
+        self.CLe = 2*self.m/(ro*self.V**2 * self.w.S)
+        # equação 3.3 Roskam
+
         return
     
     def set_tail (self, lt: float, Lt: float, ht: float):
@@ -529,6 +554,33 @@ class Aircraft:
         self.Vh = self.Lt * self.t.S / (self.w.S * self.w.mac)
         return
     
+    def estimate_CLa (self, k: float, T: float):
+        M = Util.mach(self.V, T)
+
+        # CLa total da aeronave
+        self.w.estimate_CLa(k, self.w.V_LE, M)      # Asa
+        self.f.estimate_CLa(k, self.f.V_LE, M)      # EV
+        # self.t.estimate_CLa(k, self.t.V_LE, M)      # EH
+
+        self.a.estimate_CLa(self.w, M)      # Aileron
+        self.r.estimate_CLa(self.f, M)      # Leme
+        # self.e.estimate_CLa(self.t, M)      # Profundor
+        return
+
+    def estimate_CLd (self):
+
+        self.a.estimate_CLd(self.w, self.a.c/self.w.mac, self.w.th)
+        self.r.estimate_CLd(self.f, self.r.c/self.f.mac, self.f.th)
+        # self.e.estimate_CLd(self.t, self.e.c/self.w.mac, self.t.th/self.w.mac)
+        return
+    
+    def estimate_CDa (self, ro):
+        # CDa total da aeronave
+        self.w.estimate_CDa(ro, self.V, self.m)
+        self.f.estimate_CDa(ro, self.V, self.m)
+        # self.t.estimate_CDa(ro, self.V, self.m)
+        return
+
     def estimate_Coefs (self, k: float, T: float, ro : float):
         '''
         Estima os valores dos coeficientes com base em métodos paramétricos presentes no "Methods for estimating stability and control derivatives\
@@ -537,24 +589,11 @@ class Aircraft:
             T : temperatura (°C)
             ro : densidade do ar (kg/m^3)
         '''
-        M = Util.mach(self.V, T)
+        self.estimate_CLa(k, T)
 
-        # CLa total da aeronave
-        self.w.estimate_CLa(k, self.w.V_LE, M)
-        self.f.estimate_CLa(k, self.f.V_LE, M)
-        # self.t.estimate_CLa(k, self.t.V_LE, M)
-
-        self.a.set_CLd(self.w, M, self.a.c/self.w.mac, self.w.th)
-        self.r.set_CLd(self.f, M, self.r.c/self.f.mac, self.f.th)
-        # self.e.set_CLd(self.t, M, self.e.c/self.w.mac, self.t.th/self.w.mac)
-
-        # CDa total da aeronave
-        self.w.estimate_CDa(ro, self.V, self.m)
-        self.f.estimate_CDa(ro, self.V, self.m)
-        # self.t.estimate_CDa(ro, self.V, self.m)
-
-        self.CLe = 2*self.m/(ro*self.V**2 * self.w.S)
-        # equação 3.3 Roskam
+        self.estimate_CLd()
+        
+        self.estimate_CDa(ro)
         
         return
     

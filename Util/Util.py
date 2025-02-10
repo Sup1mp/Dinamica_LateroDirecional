@@ -126,6 +126,18 @@ def read_span (filename):
     
     return span
 
+def compara_derivadas (real, calc):
+    '''
+    Compara o erro entre as derivadas
+    '''
+    err = erro_dataframe(real, calc)
+
+    print(f"Referência:\n{real}")
+    print(f"Calculado:\n{calc}")
+    print(f"Erro:\n{err}")
+    print(f"Resumo:\n{np.round(err.describe(), 3)} ")
+    return
+
 if __name__ == "__main__":
     # erro test
     dn_1 = np.random.random((10))

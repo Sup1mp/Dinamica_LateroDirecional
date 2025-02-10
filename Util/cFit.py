@@ -1,10 +1,11 @@
 import numpy as np
 
-def Cld_t (t_c, cf_c):
+def Cld (t_c, cf_c, Cla_Cla_t):
     '''
-    Cld teórico (por radiano) obtido do gráfico da figura B.2,1(a) do Etkins
-        t_c : razão da espessura pela corda do perfil aerodinâmico
-        cf_c : razão entre a corda da superfície de controle e a corda do perfil em que está
+    Razão Cld corrigido por Cld teórico (por radianos) obtido do gráfico da figura B.2,1 do Etkins\n
+        t_c : razão da espessura pela corda do perfil aerodinâmico\n
+        cf_c : razão entre a corda da superfície de controle e a corda do perfil em que está\n
+        Cla_Cla_t : razão Cla corrigido por Cla teórico do perfil\n
     '''
 
     # Cldt_015 = np.array([ 13.78624775, -21.56185942,  17.18739997,   1.02728285])
@@ -31,14 +32,8 @@ def Cld_t (t_c, cf_c):
     d = np.polyval(np.array([-4.54946112e+03,  1.03857294e+03, -5.47004582e+01,  1.21889171e+00]), t_c)
     # r² : 1.0
 
-    return np.polyval(np.array([a, b, c, d]), cf_c)
-
-def Cld_Cld_t (cf_c, Cla_Cla_t):
-    '''
-    Razão Cld corrigido por Cld teórico obtido do gráfico da figura B.2,1(b) do Etkins
-        cf_c : razão entre a corda da superfície de controle e a corda do perfil em que está
-        Cla_Cla_t : razão Cla corrigido por Cla teórico do perfil
-    '''
+    # Cld Teórico
+    Cld_t = np.polyval(np.array([a, b, c, d]), cf_c)
 
     # Cld_098 = np.array([ 0.31489457, -0.26165478, -0.08271601,  0.13248927,  0.94637163])
     # # r² : 0.9752489305008382
@@ -70,7 +65,8 @@ def Cld_Cld_t (cf_c, Cla_Cla_t):
     e = np.polyval(np.array([ -5.90609821,  16.21850973, -12.37903544,   3.0605189 ]), cf_c)
     # r² : 0.999981611406111
 
-    return np.polyval(np.array([a, b, c, d, e]), Cla_Cla_t)
+    # Cld corrigido
+    return np.polyval(np.array([a, b, c, d, e]), Cla_Cla_t) * Cld_t
 
 def Cla_t (t_c):
     '''
@@ -153,6 +149,3 @@ def K2 (y1, y2, b, lbd):
     eta2 = 2*y2/b   # eta final
 
     return np.polyval(np.array([a, b, c, d]), eta2) - np.polyval(np.array([a, b, c, d]), eta1)
-
-if __name__ == "__main__":
-    pass

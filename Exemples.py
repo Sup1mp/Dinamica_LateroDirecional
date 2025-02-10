@@ -43,54 +43,78 @@ def Dart_T51_Sailplane(modo: int = 1):
 
         # derivadas e velocidade
         
-        pd.DataFrame(np.round(r, 4), columns=['V0', 'Lv', 'Lp', 'Lr', 'Le', 'Lc', 'Nv', 'Np', 'Nr', 'Ne', 'Nc', 'Yv', 'Yp', 'Yr', 'Ye', 'Yc'])
+        real = pd.DataFrame(np.round(r, 4), columns=['V0', 'Lv', 'Lp', 'Lr', 'Le', 'Lc', 'Nv', 'Np', 'Nr', 'Ne', 'Nc', 'Yv', 'Yp', 'Yr', 'Ye', 'Yc'])
 
         # asa
         w = Wing(
-            S = 12.7,
-            b = 15,
-            mac = 0.835,
+            S = 12.7,           # m^2
+            b = 15,             # m
+            mac = 0.835,        # m
             c12 = [1.04, 0.63]
         )
-        w.set_angles(
-            T = 2,
-            V_c4 = -0.8,
-            V_LE = 0,
-            inc = 9
+        
+        w.th = 0.618    # thikness
+
+        w.set_CL(
+              CL0 = 0.3875, # 1/rad
+              CLa = 5.55    # 1/rad
         )
+        w.set_angles(
+            T = 2,          # deg
+            V_c4 = -0.8,    # deg
+            V_LE = 0,       # deg
+            inc = 9         # deg
+        )
+
         # aileron
         ai = Aileron(
-            S = 0.38*w.b/2 * 0.23,
-            c = 0.23,
-            y1 = 0.56*w.b/2,
-            y2 = 0.94*w.b/2
+            S = 0.38*w.b/2 * 0.23,  # m^2
+            c = 0.23,               # m
+            y1 = 0.56*w.b/2,        # m
+            y2 = 0.94*w.b/2         # m
         )
-        ai.set_CLa(4.136)
+        ai.set_CLa(
+              CLa = 4.136           # 1/rad
+        )
 
         y = np.linspace(0, w.b/2, n)
         cy = 1.04 - 0.82*y/15
 
         # EV=======================================================================================
         f = Fin(
-            S = 0.96,
-            b = 1.25,
+            S = 0.96,               # m^2
+            b = 1.25,               # m
             c12 = [0.878, 0.405]
         )
+        f.set_CL(
+              CL0 = 0,
+              CLa = 3.68
+        )
+        
+        f.th = 0.015    # thikness
+
         f.set_angles(
-            V_c4 = 16
+            V_c4 = 16               # deg
         )
         # leme
         ru = Rudder(
-            S = 0.42,
-            c = 0
+            S = 0.42,               # m^2
+            c = 0.336               # m
         )
-        ru.set_CLa(f.AR, 5.405)
+        ru.set_CLa(
+              CLa = 3.68            # 1/rad
+        )
 
         h = np.linspace(0, f.b, n)
         ch = f.chord(h)
 
         # EH=======================================================================================
-        t = Tail(1, 1, 1, [1, 1])
+        t = Tail(
+              S = 1.14,             # m^2
+              b = 2.61,             # m
+              mac = 0.439,          # m
+              c12 = [0.574, 0.304]
+        )
 
         # profundor
         el = Elevator(1, 1)
@@ -102,9 +126,14 @@ def Dart_T51_Sailplane(modo: int = 1):
         )
 
         a = Aircraft(w, f, t, b, V = V0)
+        a.set_control(      # coloca as superfícies de controle
+            aileron = ai,
+            rudder = ru,
+            elevator = el
+        )
         a.set_mass(
-            ro = ro,
-            mass = 318,
+            ro = ro,        # kg/m^3
+            mass = 318,     # kg
             Ix = 1370,
             Iz = 1770,
             Ixz = -4.1
@@ -118,17 +147,15 @@ def Dart_T51_Sailplane(modo: int = 1):
             Lf = 4.595,
             hf = 0.118 + 1.25/2
         )
-        a.set_control(      # coloca as superfícies de controle
-            aileron = ai,
-            rudder = ru,
-            elevator = el
-        )
         # calculos=================================================================================
-        a.estimate_Coefs(
-            k = 1,
-            T = 20,
-            ro = ro
-        )
+        # a.estimate_Coefs(
+        #     k = 1,
+        #     T = T,
+        #     ro = ro
+        # )
+        a.estimate_CLd()
+        a.estimate_CDa(ro)
+
         CDe = 0.013 + 1.13*a.get_CL_eq()**2/(math.pi*w.AR)
 
         a.derivatives(
@@ -142,6 +169,31 @@ def Dart_T51_Sailplane(modo: int = 1):
             ch = ch
         )
 
+        return a, real
+
 
 if __name__ == "__main__":
-        pass
+        import Util.Util as util
+        import matplotlib.pyplot as plt
+        # EXEMPLO DART
+        a, real = Dart_T51_Sailplane(modo = 2)
+
+        # comparação de erro
+        util.compara_derivadas(real, a.get_derivatives())
+
+        # DINAMICA
+        from Dinamica_LateroDirecional import Dinamica_LateroDirecional
+        din = Dinamica_LateroDirecional(a)
+
+        w, c = din.aprox_freq()             # frequências natural e amortecida
+        tr = np.round(din.aprox_Tr(), 3)    # tempo de rolagem
+        ts = np.round(din.aprox_Ts(), 3)    # tempo de espiral
+
+        print(f"\nomega_d: {np.round(w, 3)}\nzeta_d: {np.round(c, 3)}\nTr: {tr} s\nTs: {ts} s")
+        
+        A, B = din.A_B()
+        G = din.G()
+
+        din.step()
+        din.root_map()
+        plt.show()
