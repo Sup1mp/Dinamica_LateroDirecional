@@ -117,22 +117,27 @@ class ControlSurface:
         self.c = c
         return
     
-    def set_CLa (self, CLa):
+    def set_CLd (self, surf, M, cf_c, t_c):
         '''
-        Coef de sustentaçãoe em função de alpha
+        Coef de sustentaçãoe em função da deflexão delta
+            surf : superfície aerodinâmica
             M : numero de mach
+            cf_c : razão entre a corda da superfície de controle e a corda do perfil em que está
+            t_c : razão da espessura pela corda do perfil aerodinâmico
         '''
-        self.CLa = CLa
+
+        K = 1
         
-        # Cla_Clat = 1.05*K / np.sqrt(1 - M**2)
-        # # equação B.1,1 do Etkins
+        # CLa teórico
+        Cla_t = Util.Cla_t(surf.th/surf.mac)
 
-        # cf_c = self.c/surf.mac
+        Cla = 1.05*K*Cla_t/ np.sqrt(1 - M**2)
+        # Equação B.1,1 do Etkins
 
-        # t_c = surf.th/surf.mac
+        K1 = Util.K1(cf_c, surf.AR)
 
-        # self.CLa = Cld*(CLa/Cla)*K1*K2
-        # # apêndice B.2 do Etkins
+        self.CLd = Util.Cld_Cld_t(cf_c, Cla_t/Cla) * Util.Cld_t(t_c, cf_c) * (surf.CLa/Cla)*K1
+        # apêndice B.2 do Etkins
         return
     
     def TAU (self, S):
@@ -154,15 +159,20 @@ class Rudder (ControlSurface):
         super().__init__(S, c)
         return
     
-    def set_CLa (self, AR_f, CLa, f = 1):
+    def set_CLd (self, surf, M, cf_c, t_c, f = 1):
         '''
-        Correção de CLa do leme devido ao efeito geométrico da EV\
-        usando o método descrito em Abbot and Von Doenhoff (1959)
-            AR_f : alongamento da EV
-            CLa : coef de sustentação em função de alpha
+        Coef de sustentaçãoe em função da deflexão delta do leme\
+        corrigido pelo efeito geométrico da EV usando o método descrito\
+        em Abbot and Von Doenhoff (1959):
+            surf : superfície aerodinâmica
+            M : numero de mach
+            cf_c : razão entre a corda da superfície de controle e a corda do perfil em que está
+            t_c : razão da espessura pela corda do perfil aerodinâmico
             f : fator de correção empirico
         '''
-        self.CLa = f*CLa/(1 + CLa/(math.pi*AR_f))
+        super().set_CLd(surf, M, cf_c, t_c)
+
+        self.CLd = f*self.CLd/(1 + self.CLd/(math.pi*surf.AR))
         # equação 13.254 COOK
         return
 #=======================================================================================================
@@ -188,6 +198,19 @@ class Aileron (ControlSurface):
         super().__init__(S, c)
         self.y1 = y1
         self.y2 = y2
+        return
+    
+    def set_CLd(self, surf, M, cf_c, t_c):
+        '''
+        Coef de sustentaçãoe em função da deflexão delta
+            surf : superfície aerodinâmica
+            M : numero de mach
+            cf_c : razão entre a corda da superfície de controle e a corda do perfil em que está
+            t_c : razão da espessura pela corda do perfil aerodinâmico
+        '''
+        super().set_CLd(surf, M, cf_c, t_c)
+        self.CLd = self.CLd * Util.K2(self.y1, self.y2, surf.b, surf.lbd)
+        # equação do apêndice B.2 do Etikins
         return
 #=======================================================================================================
 class Wing (AeroSurface):
@@ -382,20 +405,20 @@ class Aircraft:
         self.Ye = 0
 
         # Rolling moment
-        self.Le = -self.a.CLa*Util.trapezoidal(Le_int(), self.a.y1, self.a.y2, n1)/(self.w.S * s)
+        self.Le = -self.a.CLd*Util.trapezoidal(Le_int(), self.a.y1, self.a.y2, n1)/(self.w.S * s)
         
         # Yawing moment
         self.Ne = Util.trapezoidal(Ne_int(), self.a.y1, self.a.y2, n1)/(self.w.S * s)
 
         # derivadas de "c" (rudder)================================================================
         # Side force
-        self.Yc = self.f.S*self.r.CLa/self.w.S
+        self.Yc = self.f.S*self.r.CLd/self.w.S
 
         # Rolling moment
-        self.Lc = self.Vv*self.r.CLa*(self.hf/self.Lf)
+        self.Lc = self.Vv*self.r.CLd*(self.hf/self.Lf)
 
         # Yawing moment
-        self.Nc = -self.Vv*self.r.CLa
+        self.Nc = -self.Vv*self.r.CLd
 
         # Dimensionalização =======================================================================
         # side force
@@ -514,10 +537,16 @@ class Aircraft:
             T : temperatura (°C)
             ro : densidade do ar (kg/m^3)
         '''
+        M = Util.mach(self.V, T)
+
         # CLa total da aeronave
-        self.w.estimate_CLa(k, self.w.V_LE, Util.mach(self.V, T))
-        self.f.estimate_CLa(k, self.f.V_LE, Util.mach(self.V, T))
-        # self.t.estimate_CLa(k, self.t.V_LE, Util.mach(self.V, T))
+        self.w.estimate_CLa(k, self.w.V_LE, M)
+        self.f.estimate_CLa(k, self.f.V_LE, M)
+        # self.t.estimate_CLa(k, self.t.V_LE, M)
+
+        self.a.set_CLd(self.w, M, self.a.c/self.w.mac, self.w.th)
+        self.r.set_CLd(self.f, M, self.r.c/self.f.mac, self.f.th)
+        # self.e.set_CLd(self.t, M, self.e.c/self.w.mac, self.t.th/self.w.mac)
 
         # CDa total da aeronave
         self.w.estimate_CDa(ro, self.V, self.m)
