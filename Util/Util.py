@@ -135,7 +135,7 @@ def compara_derivadas (real, calc):
     print(f"Referência:\n{real}")
     print(f"Calculado:\n{calc}")
     print(f"Erro:\n{err}")
-    print(f"Resumo:\n{np.round(err.describe(), 3)} ")
+    print(f"Resumo:\n{np.round(err.describe().loc['mean'], 3)} ")
     return
 
 if __name__ == "__main__":

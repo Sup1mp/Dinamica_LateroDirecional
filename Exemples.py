@@ -38,7 +38,7 @@ def Dart_T51_Sailplane(modo: int = 1):
 
         ro = 0.3809     # densidade do ar kg/m^3
         # ro = 1.2754     # densidade do ar kg/m^3 para 20°C
-        T = 20          # temperatura do ar °C
+        T = -30          # temperatura do ar °C
         n = 11          # numero de elementos
 
         # derivadas e velocidade
@@ -53,7 +53,7 @@ def Dart_T51_Sailplane(modo: int = 1):
             c12 = [1.04, 0.63]
         )
         
-        w.th = 0.618    # thikness
+        w.th = 0.18*w.mac    # thickness
 
         w.set_CL(
               CL0 = 0.3875, # 1/rad
@@ -91,7 +91,7 @@ def Dart_T51_Sailplane(modo: int = 1):
               CLa = 3.68
         )
         
-        f.th = 0.015    # thikness
+        f.th = 0.15*f.mac    # thickness
 
         f.set_angles(
             V_c4 = 16               # deg
@@ -191,8 +191,8 @@ if __name__ == "__main__":
 
         print(f"\nomega_d: {np.round(w, 3)}\nzeta_d: {np.round(c, 3)}\nTr: {tr} s\nTs: {ts} s")
         
-        A, B = din.A_B()
-        G = din.G()
+        A, B = din.A_B()    # calculo matrizes A e B
+        G = din.G()         # calculo matriz G e N
 
         din.step()
         din.root_map()

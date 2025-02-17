@@ -293,7 +293,9 @@ class Dinamica_LateroDirecional:
         plt.grid()
         plt.xlabel('$\sigma$ (rad/s)')
         plt.ylabel('$j \gamma$ (rad/s)')
-        plt.legend([f"{self.aero.V[jj]} m/s" for jj in range(self.aero._len_velocities)])
+        if self.aero._len_velocities > 1:
+            plt.legend([f"{self.aero.V[jj]} m/s" for jj in range(self.aero._len_velocities)])
+            
 
         return wd, cd
 

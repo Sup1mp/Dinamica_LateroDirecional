@@ -148,16 +148,19 @@ class ControlSurface:
         # Equação B.1,1 do Etkins
         return
     
-    def estimate_CLd (self, surf, cf_c, t_c):
+    def estimate_CLd (self, surf):
         '''
         Coef de sustentaçãoe em função da deflexão delta
             surf : superfície aerodinâmica onde o controle se encontra
-            cf_c : razão entre a corda da superfície de controle e a corda do perfil em que está
-            t_c : razão da espessura pela corda do perfil aerodinâmico
         '''
+        t_c = surf.th/surf.mac      # razão da espessura pela corda do perfil aerodinâmico
+        cf_c = self.c/surf.mac      # razão entre a corda da superfície de controle e a corda do perfil em que está
 
-        K1 = cFit.K1(cf_c, surf.AR)
-        Cld = cFit.Cld(t_c, cf_c, cFit.Cla_t(surf.th/surf.mac)/self.CLa)
+        K1 = cFit.K1(cf_c, surf.AR)     # fator Flap-chord
+        # Figura B.2,2 do Etkins
+
+        Cld = cFit.Cld(t_c, cf_c, self.CLa/cFit.Cla_t(t_c))     # Eficiencia de controle para fluxo incompressível de duas dimensões
+        # Figura B.2,1 do Etkins
 
         self.CLd = Cld * (surf.CLa/self.CLa) * K1
         # apêndice B.2 do Etkins
@@ -182,17 +185,15 @@ class Rudder (ControlSurface):
         super().__init__(S, c)
         return
     
-    def estimate_CLd (self, surf, cf_c, t_c, f = 1):
+    def estimate_CLd (self, surf, f = 1):
         '''
         Coef de sustentaçãoe em função da deflexão delta do leme\
         corrigido pelo efeito geométrico da EV usando o método descrito\
         em Abbot and Von Doenhoff (1959):
             surf : superfície aerodinâmica onde o controle se encontra
-            cf_c : razão entre a corda da superfície de controle e a corda do perfil em que está
-            t_c : razão da espessura pela corda do perfil aerodinâmico
             f : fator de correção empirico
         '''
-        super().estimate_CLd(surf, cf_c, t_c)
+        super().estimate_CLd(surf)
 
         self.CLd = f*self.CLd/(1 + self.CLd/(math.pi*surf.AR))
         # equação 13.254 COOK
@@ -222,15 +223,17 @@ class Aileron (ControlSurface):
         self.y2 = y2
         return
     
-    def estimate_CLd(self, surf, cf_c, t_c):
+    def estimate_CLd(self, surf):
         '''
         Coef de sustentaçãoe em função da deflexão delta
             surf : superfície aerodinâmica onde o controle se encontra
-            cf_c : razão entre a corda da superfície de controle e a corda do perfil em que está
-            t_c : razão da espessura pela corda do perfil aerodinâmico
         '''
-        super().estimate_CLd(surf, cf_c, t_c)
-        self.CLd = self.CLd * cFit.K2(self.y1, self.y2, surf.b, surf.lbd)
+        super().estimate_CLd(surf)
+
+        K2 = cFit.K2(self.y1, self.y2, surf.b, surf.lbd)    # Fator de envergadura para flaps
+        # Figura B.2,3 do Etkins
+
+        self.CLd = self.CLd * K2
         # equação do apêndice B.2 do Etikins
         return
 #=======================================================================================================
@@ -555,6 +558,12 @@ class Aircraft:
         return
     
     def estimate_CLa (self, k: float, T: float):
+        '''
+        Estima os valores de CLa para todas as superfícies, até as de controle\n
+            k : ratio of actual average wing section lift curve slope, CLa to 2pi
+            T : temperatura (°C)
+        '''
+        # calcula a velocidade de mach
         M = Util.mach(self.V, T)
 
         # CLa total da aeronave
@@ -568,13 +577,19 @@ class Aircraft:
         return
 
     def estimate_CLd (self):
-
-        self.a.estimate_CLd(self.w, self.a.c/self.w.mac, self.w.th)
-        self.r.estimate_CLd(self.f, self.r.c/self.f.mac, self.f.th)
-        # self.e.estimate_CLd(self.t, self.e.c/self.w.mac, self.t.th/self.w.mac)
+        '''
+        Estima os valores de CLd (Efetividade de Controle) para todas as superfícies de controle
+        '''
+        self.a.estimate_CLd(self.w)     # aileron
+        self.r.estimate_CLd(self.f)     # leme
+        # self.e.estimate_CLd(self.t)     # profundor
         return
     
     def estimate_CDa (self, ro):
+        '''
+        Estima os valores de CDa para todas as superfícies
+            ro : densidade do ar (kg/m^3)
+        '''
         # CDa total da aeronave
         self.w.estimate_CDa(ro, self.V, self.m)
         self.f.estimate_CDa(ro, self.V, self.m)
