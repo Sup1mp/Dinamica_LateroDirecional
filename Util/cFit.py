@@ -7,6 +7,8 @@ def Cld (t_c, cf_c, Cla_Cla_t):
         cf_c : razão entre a corda da superfície de controle e a corda do perfil em que está\n
         Cla_Cla_t : razão Cla corrigido por Cla teórico do perfil
     '''
+    cf_c = max(0.15, min(cf_c, 0.5))
+    t_c = max(0, min(t_c, 0.15))
 
     # Cldt_015 = np.array([ 13.78624775, -21.56185942,  17.18739997,   1.02728285])
     # # r² : 0.9946907350538143
@@ -82,60 +84,30 @@ def K1 (cf_c, Aw):
         cf_c : razão entre a corda da superfície de controle e a corda do perfil em que está
         Aw : Aspect Ratio (alongamento) da asa
     '''
+    from Util.graphs import get_json
+    from scipy.interpolate import interpn
+    import pandas as pd
 
     # razão de mudança do ângulo de zero-lift com a deflexão do flap
     ag_Cl = -0.32121329*np.log(22.64310540900852*cf_c + 1.0601873765142054)
     # r² : 0.999171266752709
 
-    # aproximação das curvas de K1
-    # K1_01 = 0.011888507746894404/(1.5611044248944355*np.log(0.005821683478021238*Aw + 1.81342892061381) - 0.9247049739637537) + 0.9725943999683583
-    # r² : 0.9997067471885825
-
-    # K1_02 = 1.3031342670941815/(0.16242847912458203*np.log(0.8855599843840107*Aw - 0.08945724221775199) + 0.7585216968844564) - 0.059124386335223274
-    # r² : 0.998977632595784
-
-    # K1_04 = 0.006249156356691067/(5.320730945367886*np.log(0.0013515378229472428*Aw + 0.8899486489969634) + 0.6275424485379149) + 0.9828504663433438
-    # r² : 0.9994912322507276
-
-    # K1_06 = -187.76114396563466/(-290.18142990992874*np.log(3.8429762534987417*Aw + 2.4791506797989658) + 16.702016429820777) + 0.8427592723308773
-    # r² : 0.9990433000731884
-
-    # K1_07 = 55.145405798083026/(68.5134149431511*np.log(378.9483693658721*Aw + 131.95059480464863) - 241.87871341874964) + 0.8432261325608006
-    # r² : 0.998934087667205
-
-    # K1_08 = 1.386825583915899/(4.914383310766874*np.log(1.6986551221860975*Aw + 1.7991618334176516) + 1.899349056200815) + 0.9159200529327468
-    # r² : 0.9986224938225269
-
-    # K1_09 = 0.4499060868722573/(0.031959913406766176*np.log(2.331413923458465*Aw + 0.5465037936517184) + 0.6078786494289624) + 0.34631570365359404
-    # r² : 0.996164683462444
-
-    a = np.polyval(np.array([-15.91546612,  16.31609497,  -1.40180908]), ag_Cl)
-    # r² : 0.9856930415969143
-
-    b = np.polyval(np.array([-140.4479337 ,  185.78799018,  -59.89180115,    5.83285257]), ag_Cl)
-    # r² : 1.0
-
-    c = np.polyval(np.array([ 22.16902481, -35.0176765 ,  17.75085422,  -1.441256  ]), ag_Cl)
-    # r² : 1.0
-
-    d = np.polyval(np.array([-67.59078383, 106.03066234, -46.10670546,   5.43138363]), ag_Cl)
-    # r² : 1.0
-
-    e = np.polyval(np.array([-21.24783627,  23.15839958,  -3.02600008]), ag_Cl)
-    # r² : 0.9999941238154317
-
-    f = np.polyval(np.array([-34.39889194,  54.89915532, -24.37901202,   2.89590294]), ag_Cl)
-    # r² : 1.0
+    data = pd.DataFrame(get_json('K1_data'))
+    ag = np.unique(data['ag_Cl'])       # valores unicos ag_Cl
+    aw = np.unique(data['Aw'])          # valores unicos Aw
+    stru = (len(ag), len(aw))           # estrutura
+    points = (ag, aw)
+    k1 = np.reshape(data['K1'], stru)   # estrutura resposta como os valores
 
     # força e limita AR maximo para 10 (limite da interpolação)
-    return a/(b*np.log(abs(c*np.where(Aw > 10, 10, Aw) + d)) + e) + f
+    return interpn(points, k1, (ag_Cl, min(Aw, 10)))[0]
 
-def K2 (y1, y2, b, lbd):
+def K2 (y1, y2, bw, lbd):
     '''
     Fator de envergadura do flap K2 obtido na figura B.2,3 do Etkins
         y1 : posição inical da superfície de controle
         y2 : posição final da suerpfície de controle
-        b : envergadura da asa
+        bw : envergadura da asa
         lbd : afilamento da asa
     '''
     # K2_0 = np.array([-0.30326651, -0.16742802,  1.46001205,  0.02070015])
@@ -159,8 +131,8 @@ def K2 (y1, y2, b, lbd):
     d = np.polyval(np.array([ 0.0074612 , -0.02776384,  0.02070015]), lbd)
     # r² : 1.0
 
-    eta1 = 2*y1/b   # eta inicial
-    eta2 = 2*y2/b   # eta final
+    eta1 = 2*y1/bw   # eta inicial
+    eta2 = 2*y2/bw   # eta final
 
     return np.polyval(np.array([a, b, c, d]), eta2) - np.polyval(np.array([a, b, c, d]), eta1)
 
@@ -177,17 +149,17 @@ if __name__ == "__main__":
     # plt.show()
     #==============================================================================================
     # Cla_t
-    # t_c = np.linspace(0, 0.2)
+    t_c = np.linspace(0, 0.2)
 
-    # plt.plot(t_c, Cla_t(t_c))
-    # plt.grid()
-    # plt.show()
-    #==============================================================================================
-    # K1
-    cf_c = np.linspace(0, 1)
-    Aw = np.linspace(0, 10)
-    
-    plt.plot(Aw, K1(cf_c, Aw))
+    plt.plot(t_c, Cla_t(t_c))
     plt.grid()
     plt.show()
+    #==============================================================================================
+    # K1
+    # cf_c = np.linspace(0, 1)
+    # Aw = np.linspace(0, 10)
+    
+    # plt.plot(Aw, K1(cf_c, Aw))
+    # plt.grid()
+    # plt.show()
     #==============================================================================================

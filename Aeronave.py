@@ -6,18 +6,20 @@ from Util import cFit
 
 #=======================================================================================================
 class AeroSurface:
-    def __init__(self, S: float, b: float, mac: float, c12: list = None):
+    def __init__(self, S: float, b: float, mac: float, c12: list = None, th: float = None):
         '''
         Surface object, parâmetros geométricos:
             S : área (m^2)
             b : envergadura (m)
             mac : corda média aerodinamica (m)
             c12 : cordas na raiz e na ponta [raiz, ponta]
+            th : esperssura do perfil em porcentagem
         '''
         self.S = S
         self.b = b
         self.mac = mac
         self.c12 = c12 if c12 != None else [mac, mac]
+        self.th = th*self.mac if th != None else th
 
         self.x_CA = self.mac/4                          # posição do centro aerodinamico
         self.AR = (self.b**2) / self.S                  # alongamento
@@ -82,16 +84,15 @@ class AeroSurface:
 
         return
     
-    def estimate_CLa (self, k: float, V_LE: float, M: float):
+    def estimate_CLa (self, k: float, M = 0):
         '''
         Estima o valor de CLa com base em métodos paramétricos presentes no "Methods for estimating stability and control derivatives\
         of conventional subsonic airplanes" de Jan Roskam:
             k : ratio of actual average wing section lift curve slope, CLa to 2pi
-            V_LE : ângulo de enflexamento no bordo de ataque (rad)
             M : numero de mach
         '''
         # equação 2.3
-        tg_V_c2 = np.tan(V_LE) - ((1 - self.lbd)/(1 + self.lbd))*2/self.AR
+        tg_V_c2 = np.tan(self.V_LE) - ((1 - self.lbd)/(1 + self.lbd))*2/self.AR
 
         # equação 3.8 + 3.9 modificada
         self.CLa = 2*np.pi*self.AR/(2 + np.sqrt((1 - M**2 + tg_V_c2**2)*(self.AR/k)**2 + 4))
@@ -132,26 +133,33 @@ class ControlSurface:
         self.CLa = CLa
         return
     
-    def estimate_CLa (self, surf, M):
+    def estimate_CLa (self, surf, M = 0):
         '''
         Coef de sustentação em função de alpha 
             surf : superfície aerodinâmica onde o controle se encontra
             M : numero de mach
         '''
 
+        beta = np.sqrt(1 - M**2)    # Prandlt-Glauert compressibility factor
+        
         K = 1
+        # kappa com CLa teórico
+        k = 1.05*K*cFit.Cla_t(surf.th/surf.mac)/(2*np.pi)
+        # Apêndice B.1 do Ektins
 
-        # CLa teórico
-        Cla_t = cFit.Cla_t(surf.th/surf.mac)
-
-        self.CLa = 1.05*K*Cla_t/ np.sqrt(1 - M**2)
-        # Equação B.1,1 do Etkins
+        tg_V_c2 = np.tan(surf.V_LE) - ((1 - surf.lbd)/(1 + surf.lbd))*2/surf.AR
+        # equação 2.3 do "Methods for estimating stability and control derivatives of conventional subsonic airplanes" de Jan Roskam
+        
+        self.CLa = 2*np.pi*self.S/(2 + np.sqrt((self.S*beta/k)**2 * (1 + (tg_V_c2/beta)**2) + 4 ))
+        # equação da figura B.1,2 para voo subsonico
+        
         return
     
-    def estimate_CLd (self, surf):
+    def estimate_CLd (self, surf, M = 0):
         '''
         Coef de sustentaçãoe em função da deflexão delta
             surf : superfície aerodinâmica onde o controle se encontra
+            M : numero de mach
         '''
         t_c = surf.th/surf.mac      # razão da espessura pela corda do perfil aerodinâmico
         cf_c = self.c/surf.mac      # razão entre a corda da superfície de controle e a corda do perfil em que está
@@ -159,7 +167,11 @@ class ControlSurface:
         K1 = cFit.K1(cf_c, surf.AR)     # fator Flap-chord
         # Figura B.2,2 do Etkins
 
-        Cld = cFit.Cld(t_c, cf_c, self.CLa/cFit.Cla_t(t_c))     # Eficiencia de controle para fluxo incompressível de duas dimensões
+        K = 1
+        Cla = 1.05*K*cFit.Cla_t(t_c)/ np.sqrt(1 - M**2)
+        # Equação B.1,1 do Etkins
+
+        Cld = cFit.Cld(t_c, cf_c, self.CLa/Cla)     # Eficiencia de controle para fluxo incompressível de duas dimensões
         # Figura B.2,1 do Etkins
 
         self.CLd = Cld * (surf.CLa/self.CLa) * K1
@@ -223,12 +235,13 @@ class Aileron (ControlSurface):
         self.y2 = y2
         return
     
-    def estimate_CLd(self, surf):
+    def estimate_CLd(self, surf, M = 0):
         '''
         Coef de sustentaçãoe em função da deflexão delta
             surf : superfície aerodinâmica onde o controle se encontra
+            M : numero de mach
         '''
-        super().estimate_CLd(surf)
+        super().estimate_CLd(surf, M)
 
         K2 = cFit.K2(self.y1, self.y2, surf.b, surf.lbd)    # Fator de envergadura para flaps
         # Figura B.2,3 do Etkins
@@ -238,16 +251,17 @@ class Aileron (ControlSurface):
         return
 #=======================================================================================================
 class Wing (AeroSurface):
-    def __init__(self, S: float, b: float, mac: float, c12: list = None, Cm_CA: float = 0):
+    def __init__(self, S: float, b: float, mac: float, c12: list = None, th: float = None, Cm_CA: float = 0):
         '''
         Surface object, parâmetros geométricos:
             S : área (m^2)
             b : envergadura (m)
             mac : corda média aerodinamica (m)
             c12 : cordas na raiz e na ponta [raiz, ponta]
+            th : esperssura do perfil em porcentagem
             Cm_CA : coef de momento em torno do CA da asa
         '''
-        super().__init__(S, b, mac, c12)
+        super().__init__(S, b, mac, c12, th)
 
         self.Cm_CA = Cm_CA
 
@@ -261,15 +275,16 @@ class Wing (AeroSurface):
         return 2*self.CLa / (math.pi * self.AR)
 #=======================================================================================================
 class Fin (AeroSurface):
-    def __init__(self, S: float, b: float, c12: list = None, k: int = 1):
+    def __init__(self, S: float, b: float, c12: list = None, th: float = None, k: int = 1):
         '''
         Empenagem Vertical, parâmetros geométricos:
             S : área (m^2)
             b : envergadura (m)
             c12 : cordas na raiz e na ponta [raiz, ponta]
+            th : esperssura do perfil em porcentagem
             k : quantidade de EV's
         '''
-        super().__init__(S, b, (c12[0] + c12[1])/2, c12)
+        super().__init__(S, b, (c12[0] + c12[1])/2, c12, th)
         
         self.V_c4 = math.atan(3*(c12[0] - c12[1])/(4*b))            # ângulo de enflexamento em 1/4 de corda
         self.V_LE = math.atan((self.c12[0] - self.c12[1])/self.b)   # ângulo de enflexamento no bordo de ataque
@@ -296,15 +311,16 @@ class Fin (AeroSurface):
         return self.c12[0] + (self.c12[1] - self.c12[0])*h/self.b
 #=======================================================================================================
 class Tail (AeroSurface):
-    def __init__(self, S: float, b: float, mac: float, c12: list):
+    def __init__(self, S: float, b: float, mac: float, c12: list = None, th: float = None):
         '''
         Empenagem Horizontal, parâmetros geométricos:
             S : área (m^2)
             b : envergadura (m)
             mac : corda média aerodinamica (m)
             c12 : cordas na raiz e na ponta [raiz, ponta]
+            th : esperssura do perfil em porcentagem
         '''
-        super().__init__(S, b, mac, c12)
+        super().__init__(S, b, mac, c12, th)
 
         return
 #=======================================================================================================
@@ -376,10 +392,10 @@ class Aircraft:
             return CDy * cy * y**2                      # wing contribution
         
         def Le_int ():
-            return cy * ya
+            return cy * y
         
         def Ne_int ():
-            return dCDy_de * cy * ya
+            return dCDy_de * cy * y
 
         s = self.w.b/2               # pra facilitar
 
@@ -387,7 +403,6 @@ class Aircraft:
         n2 = len(ch)    # size of fin chord data
 
         y = np.linspace(0, s, n1)
-        ya = np.linspace(self.a.y1, self.a.y2, n1)
         h = np.linspace(0, self.f.b, n2)
 
         # derivadas de "v" (sideslip)==============================================================
@@ -557,31 +572,30 @@ class Aircraft:
         self.Vh = self.Lt * self.t.S / (self.w.S * self.w.mac)
         return
     
-    def estimate_CLa (self, k: float, T: float):
+    def estimate_CLa (self, k: float, M = 0):
         '''
         Estima os valores de CLa para todas as superfícies, até as de controle\n
             k : ratio of actual average wing section lift curve slope, CLa to 2pi
-            T : temperatura (°C)
+            M : numero de mach
         '''
-        # calcula a velocidade de mach
-        M = Util.mach(self.V, T)
 
         # CLa total da aeronave
-        self.w.estimate_CLa(k, self.w.V_LE, M)      # Asa
-        self.f.estimate_CLa(k, self.f.V_LE, M)      # EV
-        # self.t.estimate_CLa(k, self.t.V_LE, M)      # EH
+        self.w.estimate_CLa(k, M)      # Asa
+        self.f.estimate_CLa(k, M)      # EV
+        # self.t.estimate_CLa(k, M)      # EH
 
         self.a.estimate_CLa(self.w, M)      # Aileron
         self.r.estimate_CLa(self.f, M)      # Leme
         # self.e.estimate_CLa(self.t, M)      # Profundor
         return
 
-    def estimate_CLd (self):
+    def estimate_CLd (self, M = 0):
         '''
         Estima os valores de CLd (Efetividade de Controle) para todas as superfícies de controle
+            M : numero de mach
         '''
-        self.a.estimate_CLd(self.w)     # aileron
-        self.r.estimate_CLd(self.f)     # leme
+        self.a.estimate_CLd(self.w, M)     # aileron
+        self.r.estimate_CLd(self.f, M)     # leme
         # self.e.estimate_CLd(self.t)     # profundor
         return
     
@@ -596,17 +610,17 @@ class Aircraft:
         # self.t.estimate_CDa(ro, self.V, self.m)
         return
 
-    def estimate_Coefs (self, k: float, T: float, ro : float):
+    def estimate_Coefs (self, k: float, ro : float, M = 0):
         '''
         Estima os valores dos coeficientes com base em métodos paramétricos presentes no "Methods for estimating stability and control derivatives\
         of conventional subsonic airplanes" de Jan Roskam:
             k : ratio of actual average wing section lift curve slope, CLa to 2pi
-            T : temperatura (°C)
             ro : densidade do ar (kg/m^3)
+            M : numero de mach
         '''
-        self.estimate_CLa(k, T)
+        self.estimate_CLa(k, M)
 
-        self.estimate_CLd()
+        self.estimate_CLd(M)
         
         self.estimate_CDa(ro)
         

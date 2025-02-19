@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from Util.Util import ft2m, mach
 from Aeronave import *
 
 def Dart_T51_Sailplane(modo: int = 1):
@@ -38,7 +39,7 @@ def Dart_T51_Sailplane(modo: int = 1):
 
         ro = 0.3809     # densidade do ar kg/m^3
         # ro = 1.2754     # densidade do ar kg/m^3 para 20°C
-        T = -30          # temperatura do ar °C
+        T = -53.13          # temperatura do ar °C
         n = 11          # numero de elementos
 
         # derivadas e velocidade
@@ -50,10 +51,9 @@ def Dart_T51_Sailplane(modo: int = 1):
             S = 12.7,           # m^2
             b = 15,             # m
             mac = 0.835,        # m
-            c12 = [1.04, 0.63]
+            c12 = [1.04, 0.63],
+            th = 0.18
         )
-        
-        w.th = 0.18*w.mac    # thickness
 
         w.set_CL(
               CL0 = 0.3875, # 1/rad
@@ -78,20 +78,19 @@ def Dart_T51_Sailplane(modo: int = 1):
         )
 
         y = np.linspace(0, w.b/2, n)
-        cy = 1.04 - 0.82*y/15
+        cy = (w.c12[1] - w.c12[0])*y/(w.b/2) + w.c12[0]
 
         # EV=======================================================================================
         f = Fin(
             S = 0.96,               # m^2
             b = 1.25,               # m
-            c12 = [0.878, 0.405]
+            c12 = [0.878, 0.405],
+            th = 0.15
         )
         f.set_CL(
               CL0 = 0,
               CLa = 3.68
         )
-        
-        f.th = 0.15*f.mac    # thickness
 
         f.set_angles(
             V_c4 = 16               # deg
@@ -113,7 +112,8 @@ def Dart_T51_Sailplane(modo: int = 1):
               S = 1.14,             # m^2
               b = 2.61,             # m
               mac = 0.439,          # m
-              c12 = [0.574, 0.304]
+              c12 = [0.574, 0.304],
+              th = 0.15
         )
 
         # profundor
@@ -148,13 +148,11 @@ def Dart_T51_Sailplane(modo: int = 1):
             hf = 0.118 + 1.25/2
         )
         # calculos=================================================================================
-        # a.estimate_Coefs(
-        #     k = 1,
-        #     T = T,
-        #     ro = ro
-        # )
-        a.estimate_CLd()
-        a.estimate_CDa(ro)
+        a.estimate_Coefs(
+            k = 1,
+            ro = ro,
+            M = mach(V0, T)
+        )
 
         CDe = 0.013 + 1.13*a.get_CL_eq()**2/(math.pi*w.AR)
 
@@ -171,29 +169,35 @@ def Dart_T51_Sailplane(modo: int = 1):
 
         return a, real
 
+def Boeing_747_100 (modo: int = 1):
+      w = Wing(
+            S = ft2m(ft2m(5500)),
+            b = ft2m(195.68),
+            mac = ft2m(27.31)
+      )
 
 if __name__ == "__main__":
-        import Util.Util as util
-        import matplotlib.pyplot as plt
-        # EXEMPLO DART
-        a, real = Dart_T51_Sailplane(modo = 2)
+    import Util.Util as util
+    import matplotlib.pyplot as plt
+    # EXEMPLO DART
+    a, real = Dart_T51_Sailplane(modo = 2)
 
-        # comparação de erro
-        util.compara_derivadas(real, a.get_derivatives())
+    # comparação de erro
+    util.compara_derivadas(real, a.get_derivatives())
 
-        # DINAMICA
-        from Dinamica_LateroDirecional import Dinamica_LateroDirecional
-        din = Dinamica_LateroDirecional(a)
+    # DINAMICA
+    from Dinamica_LateroDirecional import Dinamica_LateroDirecional
+    din = Dinamica_LateroDirecional(a)
 
-        w, c = din.aprox_freq()             # frequências natural e amortecida
-        tr = np.round(din.aprox_Tr(), 3)    # tempo de rolagem
-        ts = np.round(din.aprox_Ts(), 3)    # tempo de espiral
+    w, c = din.aprox_freq()             # frequências natural e amortecida
+    tr = np.round(din.aprox_Tr(), 3)    # tempo de rolagem
+    ts = np.round(din.aprox_Ts(), 3)    # tempo de espiral
 
-        print(f"\nomega_d: {np.round(w, 3)}\nzeta_d: {np.round(c, 3)}\nTr: {tr} s\nTs: {ts} s")
-        
-        A, B = din.A_B()    # calculo matrizes A e B
-        G = din.G()         # calculo matriz G e N
+    print(f"\nomega_d: {np.round(w, 3)}\nzeta_d: {np.round(c, 3)}\nTr: {tr} s\nTs: {ts} s")
+    
+    A, B = din.A_B()    # calculo matrizes A e B
+    G = din.G()         # calculo matriz G e N
 
-        din.step()
-        din.root_map()
-        plt.show()
+    din.step()
+    din.root_map()
+    plt.show()
