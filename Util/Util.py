@@ -1,5 +1,6 @@
 import numpy as np
 from pandas import DataFrame
+import json
 
 def remove_space (var):
     '''
@@ -20,19 +21,6 @@ def erro (real, aprox):
 
 def erro_dataframe (real: DataFrame, aprox: DataFrame):
     return np.round(abs((aprox - real)/real.replace(0, 1)), 3)
-
-def compare_derivatives(ref, calc):
-    err = erro_dataframe(ref, calc)
-    
-    # plot dos dados obtidos
-    print(f"Referência:\n{ref}")
-    print(f"Calculado:\n{calc}")
-    print(f"Erro percentual:\n{err}")
-
-    # status formais
-    sts = np.round(err.describe(), 4)
-    print(f"Stats:\n{sts.loc['mean']}\nMean sum: {sts.loc['mean'].sum()}")
-    return
 
 def weddle (yi, a, b):
     '''
@@ -134,40 +122,27 @@ def compara_derivadas (real, calc):
 
     print(f"Referência:\n{real}")
     print(f"Calculado:\n{calc}")
-    print(f"Erro:\n{err}")
-    print(f"Resumo:\n{np.round(err.describe().loc['mean'], 3)} ")
+    print(f"Erro Percentual:\n{err}")
+    
+    st = np.round(err.describe(), 4)
+    print(f"Média Erros:\n{st.loc['mean']}\nMédia Total: {st.loc['mean'].sum()}")
     return
 
-# aproximações retiradas do Ektins
-def lb2N (lb):
+def get_json (filename):
     '''
-    Pounds(lb) to Newtons(N)
+    Retorna dados de json do caminho "Util/Data/filename"
     '''
-    return lb * 4.448
+    with open(f"Util/Data/{filename}.json", 'r') as file:
+        data = json.load(file)  # lê dados do arquivo
+    return data
 
-def ft2m (ft):
+def save_json(data, filename):
     '''
-    Feet(ft) to meters(m)
+    Salva dados em json no caminho "Util/Data/filename"
     '''
-    return ft * 0.3048
-
-def slug2kg (slug):
-    '''
-    Slugs to Kilograms(kg)
-    '''
-    return slug * 14.59
-
-def mph2ms (mph):
-    '''
-    Miles per hour(mph) to Meter per Second(m/s)
-    '''
-    return mph * 0.4471
-
-def kt2ms (kt):
-    '''
-    Knots(kt) to Meters per Second(m/s)
-    '''
-    return kt * 0.5151
+    with open(f"Util/Data/{filename}.json", '+w') as file:
+        json.dump(data, file)   # salva dados no arquivo
+    return
 
 if __name__ == "__main__":
     # erro test

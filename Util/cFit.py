@@ -84,7 +84,7 @@ def K1 (cf_c, Aw):
         cf_c : razão entre a corda da superfície de controle e a corda do perfil em que está
         Aw : Aspect Ratio (alongamento) da asa
     '''
-    from Util.graphs import get_json
+    from Util.util import get_json
     from scipy.interpolate import interpn
     import pandas as pd
 

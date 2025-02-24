@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score
 from scipy.optimize import curve_fit
 from math import ceil
-import json
+from Util.util import get_json, save_json
 
 def fitGraph (x, y, d, name):
     
@@ -62,16 +62,6 @@ def save_coefs (popt, varname, filename):
 
     save_json(data, filename)   # salva dados de volta no arquivo
     print(f"File {filename} Saved\n")
-    return
-
-def get_json (filename):
-    with open(f"Util/{filename}.json", 'r') as file:
-        data = json.load(file)  # lê dados do arquivo
-    return data
-
-def save_json(data, filename):
-    with open(f"Util/{filename}.json", '+w') as file:
-        json.dump(data, file)   # salva dados no arquivo
     return
 
 if __name__ == "__main__":

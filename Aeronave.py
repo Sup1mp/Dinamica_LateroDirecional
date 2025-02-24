@@ -1,7 +1,7 @@
 import math
 import numpy as np
 from pandas import DataFrame
-import Util.Util as Util
+from Util.util import trapezoidal
 from Util import cFit
 
 #=======================================================================================================
@@ -58,15 +58,21 @@ class AeroSurface:
         return
     
     def get_CD (self, alpha):
+        '''
+        Retorna CD para ângulo de ataque alpha
+        '''
         # Oswald's factor
         e = 1/(1.05 + 0.007*math.pi*self.AR)    # Obert 5 <= AR <= 25
         # e = 1.78*(1 - 0.045*self.AR**0.68) - 0.64   # internet
         
         # pode ser deduzida a partir da equação 3.1 do "Methods for estimating stability and control\
         #  derivatives of conventional subsonic airplanes" de Jan Roskam
-        return self.CD0 + (self.get_CL(alpha)**2 - self.CL0**2)/(math.pi*self.AR*e)
+        return self.CD0 + ((self.CLa * (alpha + self.inc))**2)/(math.pi*self.AR*e)
     
     def get_CL (self, alpha):
+        '''
+        Retorna CL para ângulo de ataque alpha
+        '''
         return self.CL0 + self.CLa * (alpha + self.inc)
 
     def set_angles (self, T: float = 0, V_c4: float = 0, V_LE: float = 0, inc: float = 0):
@@ -84,26 +90,30 @@ class AeroSurface:
 
         return
     
-    def estimate_CLa (self, k: float, M = 0):
+    def estimate_CLa (self, K: float = 0.9, M = 0):
         '''
         Estima o valor de CLa com base em métodos paramétricos presentes no "Methods for estimating stability and control derivatives\
         of conventional subsonic airplanes" de Jan Roskam:
-            k : ratio of actual average wing section lift curve slope, CLa to 2pi
+            K : fator obtido na figura B.1,1a do Ektins
             M : numero de mach
         '''
         # equação 2.3
         tg_V_c2 = np.tan(self.V_LE) - ((1 - self.lbd)/(1 + self.lbd))*2/self.AR
 
+        # kappa com CLa teórico
+        k = 1.05*K*cFit.Cla_t(self.th/self.mac)/(2*np.pi)
+        # ratio of actual average wing section lift curve slope, CLa to 2pi
+
         # equação 3.8 + 3.9 modificada
         self.CLa = 2*np.pi*self.AR/(2 + np.sqrt((1 - M**2 + tg_V_c2**2)*(self.AR/k)**2 + 4))
         return
     
-    def estimate_CDa (self, ro, V, m):
+    def estimate_CDa (self, ro, V0, m):
         '''
         Estima o valor de CDa com base em métodos paramétricos presentes no "Methods for estimating stability and control derivatives\
         of conventional subsonic airplanes" de Jan Roskam:
             ro : densidade do ar (kg/m^3)
-            V : velocidade (m/s)
+            V0 : velocidade (m/s)
             m : massa da aeronave (kg)
         '''
         # Oswald's factor
@@ -111,7 +121,7 @@ class AeroSurface:
         # e = 1.78*(1 - 0.045*self.AR**0.68) - 0.64   # internet
 
         # equação 3.2 + 3.3 + 3.4 modificada
-        self.CDa = 4*m*self.CLa/(ro*V**2 * self.S*math.pi*self.AR*e)
+        self.CDa = 4*m*self.CLa/(ro*V0**2 * self.S*math.pi*self.AR*e)
         return
 #=======================================================================================================    
 class ControlSurface:
@@ -142,7 +152,7 @@ class ControlSurface:
 
         beta = np.sqrt(1 - M**2)    # Prandlt-Glauert compressibility factor
         
-        K = 1
+        K = 0.9
         # kappa com CLa teórico
         k = 1.05*K*cFit.Cla_t(surf.th/surf.mac)/(2*np.pi)
         # Apêndice B.1 do Ektins
@@ -197,15 +207,16 @@ class Rudder (ControlSurface):
         super().__init__(S, c)
         return
     
-    def estimate_CLd (self, surf, f = 1):
+    def estimate_CLd (self, surf, M = 0, f = 1):
         '''
         Coef de sustentaçãoe em função da deflexão delta do leme\
         corrigido pelo efeito geométrico da EV usando o método descrito\
         em Abbot and Von Doenhoff (1959):
             surf : superfície aerodinâmica onde o controle se encontra
+            M : numero de mach
             f : fator de correção empirico
         '''
-        super().estimate_CLd(surf)
+        super().estimate_CLd(surf, M)
 
         self.CLd = f*self.CLd/(1 + self.CLd/(math.pi*surf.AR))
         # equação 13.254 COOK
@@ -275,7 +286,7 @@ class Wing (AeroSurface):
         return 2*self.CLa / (math.pi * self.AR)
 #=======================================================================================================
 class Fin (AeroSurface):
-    def __init__(self, S: float, b: float, c12: list = None, th: float = None, k: int = 1):
+    def __init__(self, S: float, b: float, c12: list, th: float = None, k: int = 1):
         '''
         Empenagem Vertical, parâmetros geométricos:
             S : área (m^2)
@@ -338,7 +349,7 @@ class Body:
         return
 #=======================================================================================================
 class Aircraft:
-    def __init__(self, wing: Wing, fin: Fin, tail: Tail, body: Body, V):
+    def __init__(self, wing: Wing, fin: Fin, tail: Tail, body: Body, V0):
         '''
         Aircraft:
             wing : asa obj
@@ -351,10 +362,10 @@ class Aircraft:
         self.f = fin
         self.t = tail
         self.b = body
-        self.V = V
+        self.V0 = V0
 
-        self._many_velocities = True if type(self.V) == np.ndarray else False
-        self._len_velocities = len(self.V) if self._many_velocities else 1
+        self._many_velocities = True if type(self.V0) == np.ndarray else False
+        self._len_velocities = len(self.V0) if self._many_velocities else 1
 
         return
     
@@ -410,8 +421,8 @@ class Aircraft:
         self.Yv = (self.b.Sl*self.b.CDl - self.f.S*self.f.CLa)/self.w.S
 
         # Rolling moment
-        self.Lv = -Util.trapezoidal(Lv_int1(), 0, s, n1)/(self.w.S * s)\
-                - 2*self.CLe*math.tan(self.w.V_c4)*Util.trapezoidal(Lv_int2(), 0, s, n1)/(self.w.S * s)\
+        self.Lv = -trapezoidal(Lv_int1(), 0, s, n1)/(self.w.S * s)\
+                - 2*self.CLe*math.tan(self.w.V_c4)*trapezoidal(Lv_int2(), 0, s, n1)/(self.w.S * s)\
                 - self.f.CLa * self.Vv * (self.hf/self.Lf)
 
         # Yawing moment
@@ -419,24 +430,24 @@ class Aircraft:
 
         # derivadas de "p" (roll rate)=============================================================
         # Side force 
-        self.Yp = -Util.trapezoidal(Yp_int(), 0, self.f.b, n2)/(self.w.S * self.w.b)
+        self.Yp = -trapezoidal(Yp_int(), 0, self.f.b, n2)/(self.w.S * self.w.b)
 
         # Rolling moment
-        self.Lp =  -Util.trapezoidal(Lp_int(), 0, s, n1)/(2*self.w.S * s**2)
+        self.Lp =  -trapezoidal(Lp_int(), 0, s, n1)/(2*self.w.S * s**2)
 
         # Yawing moment
-        self.Np = -Util.trapezoidal(Np_int(), 0, s, n1)/(2*self.w.S * s**2)
+        self.Np = -trapezoidal(Np_int(), 0, s, n1)/(2*self.w.S * s**2)
 
         # derivadas de "r" (yaw rate)==============================================================
         # Side force
         self.Yr = self.Vv*self.f.CLa      #??
 
         # Rolling moment
-        self.Lr = Util.trapezoidal(Lr_int(), 0, s, n1)/(self.w.S * s**2)\
+        self.Lr = trapezoidal(Lr_int(), 0, s, n1)/(self.w.S * s**2)\
                 + self.f.CLa*self.Vv*(self.hf/self.w.b)
 
         # Yawing moment
-        self.Nr = -Util.trapezoidal(Nr_int(), 0, s, n1)/(self.w.S * s**2)\
+        self.Nr = -trapezoidal(Nr_int(), 0, s, n1)/(self.w.S * s**2)\
                 - self.f.CLa*self.Vv*(self.Lf/self.w.b)
         
         # derivadas de "e" (aileron)===============================================================
@@ -444,10 +455,10 @@ class Aircraft:
         self.Ye = 0
 
         # Rolling moment
-        self.Le = -self.a.CLd*Util.trapezoidal(Le_int(), self.a.y1, self.a.y2, n1)/(self.w.S * s)
+        self.Le = -self.a.CLd*trapezoidal(Le_int(), self.a.y1, self.a.y2, n1)/(self.w.S * s)
         
         # Yawing moment
-        self.Ne = Util.trapezoidal(Ne_int(), self.a.y1, self.a.y2, n1)/(self.w.S * s)
+        self.Ne = trapezoidal(Ne_int(), self.a.y1, self.a.y2, n1)/(self.w.S * s)
 
         # derivadas de "c" (rudder)================================================================
         # Side force
@@ -540,10 +551,10 @@ class Aircraft:
         self.Ixz = Ixz
 
         # adimensionalizadores
-        self._ad1 = 0.5*ro*self.V*self.w.S
+        self._ad1 = 0.5*ro*self.V0*self.w.S
         self._ad2 = self._ad1*self.w.b
         self._ad3 = self._ad2*self.w.b
-        self._ad4 = self._ad1*self.V
+        self._ad4 = self._ad1*self.V0
         self._ad5 = self._ad4*self.w.b
 
         self.m1 = self.m/self._ad1        # massa adimensional
@@ -552,7 +563,7 @@ class Aircraft:
         self.Ixz1 = self.Ixz/self._ad2    # momento de inercia Ixz adimensional
 
         # coeficiente de sustentação de equilibrio da aeronave
-        self.CLe = 2*self.m/(ro*self.V**2 * self.w.S)
+        self.CLe = 2*self.m/(ro*self.V0**2 * self.w.S)
         # equação 3.3 Roskam
 
         return
@@ -605,9 +616,9 @@ class Aircraft:
             ro : densidade do ar (kg/m^3)
         '''
         # CDa total da aeronave
-        self.w.estimate_CDa(ro, self.V, self.m)
-        self.f.estimate_CDa(ro, self.V, self.m)
-        # self.t.estimate_CDa(ro, self.V, self.m)
+        self.w.estimate_CDa(ro, self.V0, self.m)
+        self.f.estimate_CDa(ro, self.V0, self.m)
+        # self.t.estimate_CDa(ro, self.V0, self.m)
         return
 
     def estimate_Coefs (self, k: float, ro : float, M = 0):
@@ -652,14 +663,14 @@ class Aircraft:
         name = ['V0', 'Lv', 'Lp', 'Lr', 'Le', 'Lc',\
                 'Nv', 'Np', 'Nr', 'Ne', 'Nc',\
                 'Yv', 'Yp', 'Yr', 'Ye', 'Yc']
-        order = [self.V, self.Lv, self.Lp, self.Lr, self.Le, self.Lc,\
+        order = [self.V0, self.Lv, self.Lp, self.Lr, self.Le, self.Lc,\
                 self.Nv, self.Np, self.Nr, self.Ne, self.Nc,\
                 self.Yv, self.Yp, self.Yr, self.Ye, self.Yc]
         
         if self._many_velocities:
             # make sure that the size stays homogeneous even with float inputs
             deri = np.array(list(map(
-                lambda x: x if type(x) == np.ndarray else np.array([x for _ in range(len(self.V))]),
+                lambda x: x if type(x) == np.ndarray else np.array([x for _ in range(len(self.V0))]),
                 order))).transpose()
         else:
             deri = np.array([order])
@@ -671,7 +682,7 @@ class Aircraft:
         Retorna o tempo para completar uma curva e a taxa de curvatura
             phi : angulo de rolagem da aeronave (deg)
         '''
-        t_c = 2*np.pi*self.V/(9.81*np.tan(np.radians(phi)))
+        t_c = 2*np.pi*self.V0/(9.81*np.tan(np.radians(phi)))
         # equação 2.25 do COOK
 
         turn_rate = 2*np.pi/t_c

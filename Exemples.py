@@ -1,7 +1,11 @@
 import numpy as np
 import pandas as pd
-from Util.Util import ft2m, mach
+from Util.unidades import ft2m
+from Util.util import mach, compara_derivadas
 from Aeronave import *
+
+def Boeing_747_100 (modo: int = 1):
+     return
 
 def Dart_T51_Sailplane(modo: int = 1):
         '''
@@ -169,21 +173,20 @@ def Dart_T51_Sailplane(modo: int = 1):
 
         return a, real
 
-def Boeing_747_100 (modo: int = 1):
-      w = Wing(
-            S = ft2m(ft2m(5500)),
-            b = ft2m(195.68),
-            mac = ft2m(27.31)
-      )
+def DR_1_AeroBat (modo: int = 1):
+     w = Wing(
+          S = 118
+     )
+     return
 
+#=============================================================================== 
 if __name__ == "__main__":
-    import Util.Util as util
     import matplotlib.pyplot as plt
     # EXEMPLO DART
     a, real = Dart_T51_Sailplane(modo = 2)
 
     # comparação de erro
-    util.compara_derivadas(real, a.get_derivatives())
+    compara_derivadas(real, a.get_derivatives())
 
     # DINAMICA
     from Dinamica_LateroDirecional import Dinamica_LateroDirecional
@@ -200,4 +203,21 @@ if __name__ == "__main__":
 
     din.step()
     din.root_map()
+
+    # Norma
+    from Norma import MILF8587C
+    norm = MILF8587C(
+        Class = 1,
+        Category = "B"
+    )
+    l_dutch = []
+    l_roll = []
+    l_spiral = []
+    for n in range(len(w)):
+        l_dutch.append(norm.dutch_roll(w[n], c[n]))
+        l_roll.append(norm.roll_mode(tr[n]))
+        l_spiral.append(norm.spiral_stability(ts[n]))
+
+    print(f"\nlevel da norma MIL-F-8587C\nDutch: {l_dutch}\nRoll: {l_roll}\nSpiral: {l_spiral}")
+    
     plt.show()
