@@ -24,8 +24,8 @@ class Dinamica_LateroDirecional:
         g = 9.81    # gravidade
 
         # voo reto e simétrico permite essa simplificação
-        Ue = self.aero.V*np.cos(self.aero.theta)
-        We = self.aero.V*np.sin(self.aero.theta)
+        Ue = self.aero.V0*np.cos(self.aero.theta)
+        We = self.aero.V0*np.sin(self.aero.theta)
 
         # matriz de estabilidade
         self.A = np.array([
@@ -37,7 +37,7 @@ class Dinamica_LateroDirecional:
         ])
 
         # matriz de controle
-        self.B = self.aero.V * np.array([
+        self.B = self.aero.V0 * np.array([
             [self.aero.Ye/self.aero.m1, self.aero.Yc/self.aero.m1],
             [(self.aero.Ixz1*self.aero.Ne + self.aero.Iz1*self.aero.Le)/a1, (self.aero.Ixz1*self.aero.Nc + self.aero.Iz1*self.aero.Lc)/a1],
             [(self.aero.Ix1*self.aero.Ne + self.aero.Ixz1*self.aero.Le)/a1, (self.aero.Ix1*self.aero.Nc + self.aero.Ixz1*self.aero.Lc)/a1],
@@ -229,13 +229,13 @@ class Dinamica_LateroDirecional:
         '''
         Retorna a constante de tempo Ts do Spiral Mode aproximada
         '''
-        return -self.aero.V/9.81 * (self.aero.Lv*self.aero.Np - self.aero.Lp*self.aero.Nv)/(self.aero.Lr*self.aero.Nv - self.aero.Lv*self.aero.Nr)
+        return -self.aero.V0/9.81 * (self.aero.Lv*self.aero.Np - self.aero.Lp*self.aero.Nv)/(self.aero.Lr*self.aero.Nv - self.aero.Lv*self.aero.Nr)
     
     def aprox_freq (self):
         '''
         Retorna as frequências naturais omega_d e de amortecimento zeta_d aproximadas para o Dutch Roll
         '''
-        wd_ap = np.sqrt(self.aero.V*self.aero.Nv1/self.aero.Iz)                            # frequencia natural omega_d
+        wd_ap = np.sqrt(self.aero.V0*self.aero.Nv1/self.aero.Iz)                            # frequencia natural omega_d
         cd_ap = -(self.aero.Nr1/self.aero.Iz + self.aero.Yv1/self.aero.m)/(2*wd_ap)     # frequencia de amortecimento zeta_d
 
         return wd_ap, cd_ap
@@ -268,7 +268,7 @@ class Dinamica_LateroDirecional:
             ax[i//2][i%2].set(ylabel=titles[i])
             ax[i//2][i%2].grid()
             ax[i//2][i%2].set_xlim([0, tmax])
-            # ax[i//2][i%2].legend([f"{self.aero.V[jj]} m/s" for jj in range(len(self.aero.V))])
+            # ax[i//2][i%2].legend([f"{self.aero.V0[jj]} m/s" for jj in range(len(self.aero.V))])
         
         fig.tight_layout()  # ajusta o tamanho
 
@@ -294,7 +294,7 @@ class Dinamica_LateroDirecional:
         plt.xlabel('$\sigma$ (rad/s)')
         plt.ylabel('$j \gamma$ (rad/s)')
         if self.aero._len_velocities > 1:
-            plt.legend([f"{self.aero.V[jj]} m/s" for jj in range(self.aero._len_velocities)])
+            plt.legend([f"{self.aero.V0[jj]} m/s" for jj in range(self.aero._len_velocities)])
             
 
         return wd, cd
@@ -307,8 +307,8 @@ class Dinamica_LateroDirecional:
             cd : frequência de amortecimento
         '''
         # baseado nas equações de aproximação das frequencias
-        A = 2*(wd**2)*self.aero.Iz/(ro*(self.aero.V**2)*self.aero.f.CLa)
-        B = -self.aero.Iz/self.aero.f.CLa * (4*wd*cd*self.aero.m/(ro*self.aero.V) + self.aero.b.Sl*self.aero.b.CDl)
+        A = 2*(wd**2)*self.aero.Iz/(ro*(self.aero.V0**2)*self.aero.f.CLa)
+        B = -self.aero.Iz/self.aero.f.CLa * (4*wd*cd*self.aero.m/(ro*self.aero.V0) + self.aero.b.Sl*self.aero.b.CDl)
         delta = np.sqrt(B**2 + 4*A**2*self.aero.m*self.aero.Iz)
 
         # distancia do CG até o CA da EV

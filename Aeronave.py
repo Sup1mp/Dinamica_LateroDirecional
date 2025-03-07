@@ -306,7 +306,7 @@ class Fin (AeroSurface):
     def effective_AR (self, AR_B_AR, AR_HB_AR_B, KH):
         '''
         Calcula o AR effetivo da EV, obtido no Methods for estimating stability and control derivatives\
-         of conventional subsonic airplanes by ROSKAM
+         of conventional subsonic airplanes by ROSKAM:\n
             AR_B_AR : razão do AR na preseça do corpo com o AR da EV isolada (figura 7.5)
             AR_HB_AR_B : razão do AR na presença da EH e do corpo com o AR só na presença do corpo (figura 7.6)
             KH : fator que conta com o tamanho relativo da EH e da EV (figura 7.7)
@@ -349,7 +349,7 @@ class Body:
         return
 #=======================================================================================================
 class Aircraft:
-    def __init__(self, wing: Wing, fin: Fin, tail: Tail, body: Body, V0):
+    def __init__(self, wing: Wing, fin: Fin, tail: Tail, body: Body, V0: float|np.ndarray):
         '''
         Aircraft:
             wing : asa obj
@@ -371,7 +371,7 @@ class Aircraft:
     
     def derivatives (self, dCL_day, dCD_day, dCL_dah, dCDy_de, CDy, CLy, cy: list, ch: list):
         '''
-        Calcula as derivadas adimensionais de estabilidade presentes no apêndice 8 do livro
+        Calcula as derivadas adimensionais de estabilidade presentes no apêndice 8 do livro do COOK:\n
             dCL_day : derivada do coef de sustentação em função de alpha na coordenada y
             dCD_day : derivada do coef de arrasto em função de alpha na coordenada y
             dCL_dah : derivada do coef de sustentação em função de alpha na coordenada h
@@ -496,7 +496,7 @@ class Aircraft:
 
     def set_angles (self, alpha, theta):
         '''
-        Ângulos:
+        Ângulos:\n
             alpha : ang de ataque (deg)
             theta : ang de arfagem (deg)
         '''
@@ -506,7 +506,7 @@ class Aircraft:
     
     def set_control (self, aileron: Aileron, elevator: Elevator, rudder : Rudder):
         '''
-        Recebe as superfícies de controle da aeronave
+        Recebe as superfícies de controle da aeronave:\n
             aileron : aileron obj
             elevator : profundor obj
             rudder : leme obj
@@ -518,7 +518,7 @@ class Aircraft:
     
     def set_fin (self, lf: float, Lf: float, hf: float):
         '''
-        Informa a posição da EV
+        Informa a posição da EV:\n
             lf : distância do CA da asa até o CA da EV em x (m)
             Lf : distância do CG até o CA da EV em x (m)
             hf : distância do eixo x até o CA da EV em z (m)
@@ -537,7 +537,7 @@ class Aircraft:
     
     def set_mass (self, ro:float, mass: float, Ix: float, Iz: float, Ixz: float):
         '''
-        Informa a massa e os momentos de inércia
+        Informa a massa e os momentos de inércia:\n
             ro : densidade do ar (kg/m^3)
             mass : massa da aeronave (kg)
             Ix : momento de inércia Ix eixo aeronautico (kg*m^2)
@@ -570,7 +570,7 @@ class Aircraft:
     
     def set_tail (self, lt: float, Lt: float, ht: float):
         '''
-        Informa a posição da EH
+        Informa a posição da EH:\n
             lt : distância do CA da asa até o CA da EH em x (m)
             Lt : distância do CG até o CA da EH em x (m)
             ht : distância do eixo x até o CA da EH em z (m)
@@ -585,7 +585,7 @@ class Aircraft:
     
     def estimate_CLa (self, k: float, M = 0):
         '''
-        Estima os valores de CLa para todas as superfícies, até as de controle\n
+        Estima os valores de CLa para todas as superfícies, até as de controle:\n
             k : ratio of actual average wing section lift curve slope, CLa to 2pi
             M : numero de mach
         '''
@@ -602,7 +602,7 @@ class Aircraft:
 
     def estimate_CLd (self, M = 0):
         '''
-        Estima os valores de CLd (Efetividade de Controle) para todas as superfícies de controle
+        Estima os valores de CLd (Efetividade de Controle) para todas as superfícies de controle:\n
             M : numero de mach
         '''
         self.a.estimate_CLd(self.w, M)     # aileron
@@ -612,7 +612,7 @@ class Aircraft:
     
     def estimate_CDa (self, ro):
         '''
-        Estima os valores de CDa para todas as superfícies
+        Estima os valores de CDa para todas as superfícies:\n
             ro : densidade do ar (kg/m^3)
         '''
         # CDa total da aeronave
@@ -624,7 +624,7 @@ class Aircraft:
     def estimate_Coefs (self, k: float, ro : float, M = 0):
         '''
         Estima os valores dos coeficientes com base em métodos paramétricos presentes no "Methods for estimating stability and control derivatives\
-        of conventional subsonic airplanes" de Jan Roskam:
+        of conventional subsonic airplanes" de Jan Roskam:\n
             k : ratio of actual average wing section lift curve slope, CLa to 2pi
             ro : densidade do ar (kg/m^3)
             M : numero de mach
@@ -639,7 +639,7 @@ class Aircraft:
     
     def get_CL_eq (self):
         '''
-        Retorna CL de equilíbrio da aeronave
+        Retorna CL de equilíbrio da aeronave CLe
         '''
         return self.CLe
     
@@ -679,7 +679,7 @@ class Aircraft:
     
     def curve (self, phi):
         '''
-        Retorna o tempo para completar uma curva e a taxa de curvatura
+        Retorna o tempo para completar uma curva e a taxa de curvatura:\n
             phi : angulo de rolagem da aeronave (deg)
         '''
         t_c = 2*np.pi*self.V0/(9.81*np.tan(np.radians(phi)))

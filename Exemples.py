@@ -1,18 +1,25 @@
 import numpy as np
 import pandas as pd
 from Util.unidades import ft2m
-from Util.util import mach, compara_derivadas
+from Util.util import mach, compara_derivadas, getAtmosphere
 from Aeronave import *
 
 def Boeing_747_100 (modo: int = 1):
      
     if modo == 1:
-        V0 = 67.3608    # m/s
+        V0 = 157.886        # m/s
+        alt = ft2m(20000)   # m
+        T, P, ro, s = getAtmosphere(alt)
+
     elif modo == 2:
-        V0 = [67.3608, 157.886, 265.481]    # m/s
+        V0 = np.array([67.3608, 157.886, 265.481])    # m/s
+        alt = [0, ft2m(20000), ft2m(40000)] # m
+        T, P, ro, s = getAtmosphere(alt)
     else:
         raise ValueError("modo desconhecido, colocar somente 1 ou 2")
-
+    
+    n = 3
+    # real = pd.DataFrame(np.round(r, 4), columns=['V0', 'Lv', 'Lp', 'Lr', 'Le', 'Lc', 'Nv', 'Np', 'Nr', 'Ne', 'Nc', 'Yv', 'Yp', 'Yr', 'Ye', 'Yc'])
     #=============================================================================================
     w = Wing(
         S = 510.9667,             # m^2
@@ -27,6 +34,12 @@ def Boeing_747_100 (modo: int = 1):
         V_LE = 48,    # deg
         inc = 2.5     # deg
     )
+    y1 = np.linspace(3.403092, 12.7635, n//2)
+    cy1 = w.c12[0] + (9.460992 - w.c12[0])*y1/12.7635
+    y2 = np.linspace(12.7635, w.b/2, n//2+1 if n%2 != 0 else n/2)
+    cy2 = 9.460992 + (w.c12[1] - 9.460992)*y2/(w.b/2)
+    cy = np.append(cy1, cy2)
+
     al = Aileron(
         S = 7.8837,       # m^2
         c = 1.2192,       # m
@@ -44,6 +57,10 @@ def Boeing_747_100 (modo: int = 1):
         V_c4 = 45,    # deg
         V_LE = 40     # deg
     )
+
+    h = np.linspace(0, f.b, n)
+    ch = f.chord(h)
+    
     ru = Rudder(
         S = 22.4522,    # m^2
         c = (1.26492 + 3.959352)/2
@@ -58,11 +75,43 @@ def Boeing_747_100 (modo: int = 1):
     )
     #=============================================================================================
     a = Aircraft(w, f, t, b, V0)
-    a.set_mass(
-        
+    a.set_control(al, el, ru)
+    a.set_angles(
+        alpha = 0,
+        theta = 2
     )
 
-    return
+    a.set_fin(
+        lf = 30.323282,
+        Lf = 29.629608,
+        hf = 8.330184
+    )
+    a.set_mass(
+        ro = ro,
+        mass = 288756.903,
+        Ix = 24675886.69,
+        Iz = 67384152.12,
+        Ixz = 1315143.412
+    )
+
+    a.estimate_Coefs(
+        k = 1,
+        ro = ro,
+        M = mach(V0, alt)
+    )
+
+    a.derivatives(
+        dCL_day = a.w.CLa if modo == 1 else np.array([a.w.CLa for _ in range (len(V0))]).transpose(),
+        dCD_day = a.w.CDa if modo == 1 else np.array([a.w.CDa for _ in range (len(V0))]).transpose(),
+        dCL_dah = a.f.CLa if modo == 1 else np.array([a.f.CLa for _ in range (len(V0))]).transpose(),
+        dCDy_de = a.f.CDa if modo == 1 else np.array([a.w.CDa for _ in range (len(V0))]).transpose(),
+        CDy = 0.04,
+        CLy = a.get_CL_eq(),
+        cy = cy,
+        ch = ch
+    )
+
+    return a
 
 def Dart_T51_Sailplane(modo: int = 1):
         '''
@@ -97,10 +146,11 @@ def Dart_T51_Sailplane(modo: int = 1):
             ])
         else:
             raise ValueError("modo desconhecido, colocar somente 1 ou 2")
-
-        ro = 0.3809     # densidade do ar kg/m^3
+        
+        alt = 1000 # m
+        T, P, ro, S = getAtmosphere(alt)
+        # ro = 0.3809     # densidade do ar kg/m^3
         # ro = 1.2754     # densidade do ar kg/m^3 para 20°C
-        T = -53.13          # temperatura do ar °C
         n = 11          # numero de elementos
 
         # derivadas e velocidade
@@ -186,7 +236,7 @@ def Dart_T51_Sailplane(modo: int = 1):
             h = 0.88
         )
 
-        a = Aircraft(w, f, t, b, V = V0)
+        a = Aircraft(w, f, t, b, V0 = V0)
         a.set_control(      # coloca as superfícies de controle
             aileron = ai,
             rudder = ru,
@@ -212,7 +262,7 @@ def Dart_T51_Sailplane(modo: int = 1):
         a.estimate_Coefs(
             k = 1,
             ro = ro,
-            M = mach(V0, T)
+            M = mach(V0, alt)
         )
 
         CDe = 0.013 + 1.13*a.get_CL_eq()**2/(math.pi*w.AR)
@@ -240,10 +290,11 @@ def DR_1_AeroBat (modo: int = 1):
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     # EXEMPLO DART
-    a, real = Dart_T51_Sailplane(modo = 2)
+    # a, real = Dart_T51_Sailplane(modo = 2)
+    a = Boeing_747_100(modo=2)
 
     # comparação de erro
-    compara_derivadas(real, a.get_derivatives())
+    # compara_derivadas(real, a.get_derivatives())
 
     # DINAMICA
     from Dinamica_LateroDirecional import Dinamica_LateroDirecional
@@ -261,20 +312,20 @@ if __name__ == "__main__":
     din.step()
     din.root_map()
 
-    # Norma
-    from Norma import MILF8587C
-    norm = MILF8587C(
-        Class = 1,
-        Category = "B"
-    )
-    l_dutch = []
-    l_roll = []
-    l_spiral = []
-    for n in range(len(w)):
-        l_dutch.append(norm.dutch_roll(w[n], c[n]))
-        l_roll.append(norm.roll_mode(tr[n]))
-        l_spiral.append(norm.spiral_stability(ts[n]))
+    # # Norma
+    # from Norma import MILF8587C
+    # norm = MILF8587C(
+    #     Class = 1,
+    #     Category = "B"
+    # )
+    # l_dutch = []
+    # l_roll = []
+    # l_spiral = []
+    # for n in range(len(w)):
+    #     l_dutch.append(norm.dutch_roll(w[n], c[n]))
+    #     l_roll.append(norm.roll_mode(tr[n]))
+    #     l_spiral.append(norm.spiral_stability(ts[n]))
 
-    print(f"\nlevel da norma MIL-F-8587C\nDutch: {l_dutch}\nRoll: {l_roll}\nSpiral: {l_spiral}")
+    # print(f"\nlevel da norma MIL-F-8587C\nDutch: {l_dutch}\nRoll: {l_roll}\nSpiral: {l_spiral}")
     
     plt.show()
