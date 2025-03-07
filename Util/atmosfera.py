@@ -1,3 +1,5 @@
+# Tabeloa tmosférica retirada do Apêndice D do Ektins
+
 import numpy as np
 import pandas as pd
 

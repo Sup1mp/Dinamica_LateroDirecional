@@ -37,7 +37,7 @@ class AeroSurface:
     
     def set_CL (self, CL0, CLa):
         '''
-        Coeficientes aerodinâmicos:
+        Coeficientes aerodinâmicos:\n
             CLa : derivada do coef sustentação em relação a alpha
             CL0 : coef sustentação em alpha = 0
         '''
@@ -48,7 +48,7 @@ class AeroSurface:
     
     def set_CD (self, CD0, CDa):
         '''
-        Coeficientes aerodinâmicos:
+        Coeficientes aerodinâmicos:\n
             CDa : derivada do coef de arrasto em relação a alpha
             CD0 : coef de arrasto em alpha = 0
         '''
@@ -77,7 +77,7 @@ class AeroSurface:
 
     def set_angles (self, T: float = 0, V_c4: float = 0, V_LE: float = 0, inc: float = 0):
         '''
-        Ângulos (se não declarados são considerados 0°):
+        Ângulos (se não declarados são considerados 0°):\n
             T : ang diedro (deg)
             V_c4 : ang enflexamento a 1/4 da corda (deg)
             V_LE : ang de enflexamento no bordo de ataque (deg)
@@ -93,7 +93,7 @@ class AeroSurface:
     def estimate_CLa (self, K: float = 0.9, M = 0):
         '''
         Estima o valor de CLa com base em métodos paramétricos presentes no "Methods for estimating stability and control derivatives\
-        of conventional subsonic airplanes" de Jan Roskam:
+        of conventional subsonic airplanes" de Jan Roskam:\n
             K : fator obtido na figura B.1,1a do Ektins
             M : numero de mach
         '''
@@ -111,7 +111,7 @@ class AeroSurface:
     def estimate_CDa (self, ro, V0, m):
         '''
         Estima o valor de CDa com base em métodos paramétricos presentes no "Methods for estimating stability and control derivatives\
-        of conventional subsonic airplanes" de Jan Roskam:
+        of conventional subsonic airplanes" de Jan Roskam:\n
             ro : densidade do ar (kg/m^3)
             V0 : velocidade (m/s)
             m : massa da aeronave (kg)
@@ -145,7 +145,7 @@ class ControlSurface:
     
     def estimate_CLa (self, surf, M = 0):
         '''
-        Coef de sustentação em função de alpha 
+        Coef de sustentação em função de alpha:\n
             surf : superfície aerodinâmica onde o controle se encontra
             M : numero de mach
         '''
@@ -167,7 +167,7 @@ class ControlSurface:
     
     def estimate_CLd (self, surf, M = 0):
         '''
-        Coef de sustentaçãoe em função da deflexão delta
+        Coef de sustentaçãoe em função da deflexão delta:\n
             surf : superfície aerodinâmica onde o controle se encontra
             M : numero de mach
         '''
@@ -190,7 +190,7 @@ class ControlSurface:
     
     def TAU (self, S):
         '''
-        Retorna o valor do parâmetros TAU para superfícies de controle
+        Retorna o valor do parâmetros TAU para superfícies de controle:\n
             S : área total da superfície onde o controle está
         '''
         x = self.S / S
@@ -200,9 +200,9 @@ class ControlSurface:
 class Rudder (ControlSurface):
     def __init__(self, S: float, c: float):
         '''
-        Define as dimensioes básicas do leme:
+        Define as dimensioes básicas do leme:\n
             S : área (m^2)
-            c : corda (m)
+            c : corda média (m)
         '''
         super().__init__(S, c)
         return
@@ -211,7 +211,7 @@ class Rudder (ControlSurface):
         '''
         Coef de sustentaçãoe em função da deflexão delta do leme\
         corrigido pelo efeito geométrico da EV usando o método descrito\
-        em Abbot and Von Doenhoff (1959):
+        em Abbot and Von Doenhoff (1959):\n
             surf : superfície aerodinâmica onde o controle se encontra
             M : numero de mach
             f : fator de correção empirico
@@ -225,7 +225,7 @@ class Rudder (ControlSurface):
 class Elevator (ControlSurface):
     def __init__(self, S: float, c: float):
         '''
-        Define as dimensioes básicas do profundor:
+        Define as dimensioes básicas do profundor:\n
             S : área (m^2)
             c : corda (m)
         '''
@@ -235,7 +235,7 @@ class Elevator (ControlSurface):
 class Aileron (ControlSurface):
     def __init__(self, S: float, c: float, y1: float, y2: float):
         '''
-        Define as dimensioes básicas do aileron
+        Define as dimensioes básicas do aileron:\n
             S : área (m^2)
             c : corda
             y1 : distância perpendicular do eixo x até o começo do aileron
@@ -248,7 +248,7 @@ class Aileron (ControlSurface):
     
     def estimate_CLd(self, surf, M = 0):
         '''
-        Coef de sustentaçãoe em função da deflexão delta
+        Coef de sustentaçãoe em função da deflexão delta:\n
             surf : superfície aerodinâmica onde o controle se encontra
             M : numero de mach
         '''
@@ -264,7 +264,7 @@ class Aileron (ControlSurface):
 class Wing (AeroSurface):
     def __init__(self, S: float, b: float, mac: float, c12: list = None, th: float = None, Cm_CA: float = 0):
         '''
-        Surface object, parâmetros geométricos:
+        Surface object, parâmetros geométricos:\n
             S : área (m^2)
             b : envergadura (m)
             mac : corda média aerodinamica (m)
@@ -288,7 +288,7 @@ class Wing (AeroSurface):
 class Fin (AeroSurface):
     def __init__(self, S: float, b: float, c12: list, th: float = None, k: int = 1):
         '''
-        Empenagem Vertical, parâmetros geométricos:
+        Empenagem Vertical, parâmetros geométricos:\n
             S : área (m^2)
             b : envergadura (m)
             c12 : cordas na raiz e na ponta [raiz, ponta]
@@ -324,7 +324,7 @@ class Fin (AeroSurface):
 class Tail (AeroSurface):
     def __init__(self, S: float, b: float, mac: float, c12: list = None, th: float = None):
         '''
-        Empenagem Horizontal, parâmetros geométricos:
+        Empenagem Horizontal, parâmetros geométricos:\n
             S : área (m^2)
             b : envergadura (m)
             mac : corda média aerodinamica (m)
@@ -338,7 +338,7 @@ class Tail (AeroSurface):
 class Body:
     def __init__(self, Sl: float, h: float):
         '''
-        Fuselagem
+        Fuselagem:\n
             Sl : área lateral projetada da fuselagem
             h : altura
         '''

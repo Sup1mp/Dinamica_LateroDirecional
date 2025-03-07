@@ -28,3 +28,15 @@ def kt2ms (kt):
     Knots(kt) to Meters per Second(m/s)
     '''
     return kt * 0.5151
+
+def fts2ms (fts):
+    '''
+    Feet per second (ft/s) to Meter per Second (m/s)
+    '''
+    return fts * 0.30478
+
+def ft2_2_m2 (ft2):
+    '''
+    Square Feet (ft^2) to Square Meter (m^2)
+    '''
+    return ft2 * 0.092903

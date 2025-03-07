@@ -8,13 +8,14 @@ def remove_space (var):
     '''
     return [var[j] for j in range(len(var)) if var[j] != '']
 
-def mach(V, T):
+def mach(V0, alt):
     '''
     Return the mach number for a certain temperature
-        V : velocity (m/s)
-        T : temperature (°C)
+        V0 : velocity (m/s)
+        alt : altitude (m)
     '''
-    return V/np.sqrt(1.4*8.31*(T + 273.15)/0.02897)
+    # return V0/np.sqrt(1.4*8.31*(T + 273.15)/0.02897)
+    return V0/getAtmosphere(alt)[3]
 
 def erro (real, aprox):
     return np.round(np.where(real!=0, abs((aprox - real)/real), abs((aprox - real))), 3)
@@ -128,6 +129,26 @@ def compara_derivadas (real, calc):
     print(f"Média Erros:\n{st.loc['mean']}\nMédia Total: {st.loc['mean'].sum()}")
     return
 
+def getAtmosphere (altitude):
+    '''
+    Retorna dados de Temperatura, Pressão, Densidade e Velocidade do Som respectivamente para uma data altitude:\n
+        altitude : altitude (m)
+    OBS: Limite de altitude de 18900 m
+    '''
+    # from scipy.interpolate import interp
+
+    # pega dados atmosféricos
+    data = DataFrame(get_json("Atmospheric_data"))
+    alt = data['Altitude(m)']
+
+    temp = np.interp(altitude, alt, data['Temperature(K)'])         # interpolação linear
+    pres = np.interp(altitude, alt, data['Pressure(N/m^2)'])        # interpolação linear
+    dens = np.interp(altitude, alt, data['Density(kg/m^3)'])        # interpolação linear
+    sound = np.interp(altitude, alt, data['Speed of Sound(m/s)'])   # interpolação linear
+
+    return temp, pres, dens, sound
+
+
 def get_json (filename):
     '''
     Retorna dados de json do caminho "Util/Data/filename"
@@ -145,15 +166,22 @@ def save_json(data, filename):
     return
 
 if __name__ == "__main__":
-    # erro test
-    dn_1 = np.random.random((10))
-    dn_2 = np.array([i for i in range(0, 10)])
-    dn1 = 12.5
-    dn2 = 10
-    print(f"erro_1: {erro(dn_2, dn_1)}")
-    print(f"erro1: {erro(dn2, dn1)}")
+    # # erro test
+    # dn_1 = np.random.random((10))
+    # dn_2 = np.array([i for i in range(0, 10)])
+    # dn1 = 12.5
+    # dn2 = 10
+    # print(f"erro_1: {erro(dn_2, dn_1)}")
+    # print(f"erro1: {erro(dn2, dn1)}")
 
-    # dataframe error test
-    ddf_1 = DataFrame(dn_1)
-    ddf_2 = DataFrame(dn_2)
-    print(f"erro_dataframe: {erro_dataframe(ddf_2, ddf_1)}")
+    # # dataframe error test
+    # ddf_1 = DataFrame(dn_1)
+    # ddf_2 = DataFrame(dn_2)
+    # print(f"erro_dataframe: {erro_dataframe(ddf_2, ddf_1)}")
+
+    # t, p, d, s = getAtmosphere([19000, 200])
+    # print(f"temp: {t} K \npress: {p} N/m^2\ndens: {d} kg/m^3\nsound: {s} m/s")
+
+    V0 = 200
+    alt = 5000
+    print(f"Para {V0} m/s a {alt} m de altitude:\nmach: {mach(V0, alt)}")
