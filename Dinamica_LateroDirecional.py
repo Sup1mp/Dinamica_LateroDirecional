@@ -285,7 +285,7 @@ class Dinamica_LateroDirecional:
             r = np.roots(self.delta)
 
         wd = np.sqrt(r.real**2 + r.imag**2)     # frequência natural
-        cd = r.real / wd                        # frequência de amortecimento
+        cd = r.real / np.where(wd == 0, 1, wd)                        # frequência de amortecimento
 
         plt.figure()
         for i in range(self.aero._len_velocities):

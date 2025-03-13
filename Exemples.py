@@ -12,7 +12,7 @@ def Boeing_747_100 (modo: int = 1):
         T, P, ro, s = getAtmosphere(alt)
 
     elif modo == 2:
-        V0 = np.array([67.3608, 157.886, 265.481])    # m/s
+        V0 = [67.3608, 157.886, 265.481]    # m/s
         alt = [0, ft2m(20000), ft2m(40000)] # m
         T, P, ro, s = getAtmosphere(alt)
     else:
@@ -148,6 +148,7 @@ def Dart_T51_Sailplane(modo: int = 1):
             raise ValueError("modo desconhecido, colocar somente 1 ou 2")
         
         alt = 1000 # m
+        # alt = np.linspace(0, 10000, 11)
         T, P, ro, S = getAtmosphere(alt)
         # ro = 0.3809     # densidade do ar kg/m^3
         # ro = 1.2754     # densidade do ar kg/m^3 para 20°C
@@ -291,7 +292,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     # EXEMPLO DART
     # a, real = Dart_T51_Sailplane(modo = 2)
-    a = Boeing_747_100(modo=2)
+    a = Boeing_747_100(modo=1)
 
     # comparação de erro
     # compara_derivadas(real, a.get_derivatives())
@@ -311,6 +312,10 @@ if __name__ == "__main__":
 
     din.step()
     din.root_map()
+
+    ro = getAtmosphere(20000)[2]
+    Lf, Sf = din.get_Lf_Sf(ro, w, c)
+    print(f"Lf: {Lf}\nSf: {Sf}")
 
     # # Norma
     # from Norma import MILF8587C

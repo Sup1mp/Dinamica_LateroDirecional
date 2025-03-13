@@ -349,7 +349,7 @@ class Body:
         return
 #=======================================================================================================
 class Aircraft:
-    def __init__(self, wing: Wing, fin: Fin, tail: Tail, body: Body, V0: float|np.ndarray):
+    def __init__(self, wing: Wing, fin: Fin, tail: Tail, body: Body, V0: float|list):
         '''
         Aircraft:
             wing : asa obj
@@ -362,10 +362,12 @@ class Aircraft:
         self.f = fin
         self.t = tail
         self.b = body
-        self.V0 = V0
+        self.V0 = V0 if type(V0) == float else np.array(V0)
 
-        self._many_velocities = True if type(self.V0) == np.ndarray else False
-        self._len_velocities = len(self.V0) if self._many_velocities else 1
+        self._many_velocities = True if type(V0) == list else False
+        self._len_velocities = len(V0) if self._many_velocities else 1
+
+        self.set_angles() # inicializa os ângulos como zero
 
         return
     
@@ -494,14 +496,18 @@ class Aircraft:
 
         return
 
-    def set_angles (self, alpha, theta):
+    def set_angles (self, alpha: float | list = 0, theta: float | list = 0):
         '''
-        Ângulos:\n
-            alpha : ang de ataque (deg)
-            theta : ang de arfagem (deg)
+        Ângulos da aeronave:\n
+            alpha : ang. de ataque (deg)
+            theta : ang. de arfagem (deg)
         '''
-        self.alpha = np.radians(alpha)
-        self.theta = np.radians(theta)
+        if self._many_velocities:
+            self.alpha = np.radians(alpha) if type(alpha) == list else np.radians([alpha for _ in range(self._len_velocities)])
+            self.theta = np.radians(theta) if type(theta) == list else np.radians([theta for _ in range(self._len_velocities)])
+        else:
+            self.alpha = np.radians(alpha)
+            self.theta = np.radians(theta)
         return
     
     def set_control (self, aileron: Aileron, elevator: Elevator, rudder : Rudder):
@@ -535,7 +541,7 @@ class Aircraft:
         # # equação 13.244 do COOK
         return
     
-    def set_mass (self, ro:float, mass: float, Ix: float, Iz: float, Ixz: float):
+    def set_mass (self, ro:float | list, mass: float, Ix: float, Iz: float, Ixz: float):
         '''
         Informa a massa e os momentos de inércia:\n
             ro : densidade do ar (kg/m^3)
