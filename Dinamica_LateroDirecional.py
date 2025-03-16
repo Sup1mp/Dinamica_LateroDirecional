@@ -1,5 +1,6 @@
 import numpy as np
 from scipy import signal
+import control as ct
 import matplotlib.pyplot as plt
 
 from Aeronave import Aircraft
@@ -142,6 +143,7 @@ class Dinamica_LateroDirecional:
         ])
 
         Nphi_e = np.array([
+            self.z,
             le,
             -le*(nr + yv) + ne*lr + yc*lv,
             le*(nr*yv - nv*yr) + ne*(lv*yr - lr*yv) + yc*(lr*nv - lv*nr),
@@ -149,6 +151,7 @@ class Dinamica_LateroDirecional:
         ])
 
         Nphi_c = np.array([
+            self.z,
             lc,
             -lc*(nr + yv) + nc*lr + yc*lv,
             lc*(nr*yv - nv*yr) + nc*(lv*yr - lr*yv) + yc*(lr*nv - lv*nr),
@@ -172,6 +175,7 @@ class Dinamica_LateroDirecional:
         ])
 
         Npsi_e = np.array([
+            self.z,
             ne,
             le*npp - ne*(lp + yv) + ye*nv,
             le*(nv*yp - npp*yv) + ne*(lp*yv - lv*yp) + ye*(lv*npp - lp*nv),
@@ -179,6 +183,7 @@ class Dinamica_LateroDirecional:
         ])
 
         Npsi_c = np.array([
+            self.z,
             nc,
             lc*npp - nc*(lp + yv) + yc*nv,
             lc*(nv*yp - npp*yv) + nc*(lp*yv - lv*yp) + yc*(lv*npp - lp*nv),
@@ -240,9 +245,10 @@ class Dinamica_LateroDirecional:
 
         return wd_ap, cd_ap
     
-    def step(self, tmax = 30):
+    def step(self, tmax = 10):
         '''
-        Apresenta o gráfico para a resposta em step do sistema
+        Apresenta o gráfico para a resposta em step do sistema\n
+            tmax : tempo máximo analisado (s)
         '''
         fig, ax = plt.subplots(5, 2)
 
@@ -259,49 +265,55 @@ class Dinamica_LateroDirecional:
                 
                 # step response
                 if self.aero._many_velocities:
-                    t, y = signal.step(signal.lti(self.N[i][j], self.delta[j, :]), T=np.linspace(0, tmax, tmax*10))
+                    # t, y = signal.step(signal.TransferFunction(self.N[i][j], self.delta[j, :]), T=np.linspace(0, tmax, tmax*10))
+                    result = ct.step_response(ct.tf(self.N[i][j], self.delta[j, :]), T=np.linspace(0, tmax, tmax*10))
                 else:
-                    t, y = signal.step(signal.lti(self.N[i], self.delta), T=np.linspace(0, tmax*10))
+                    # t, y = signal.step(signal.TransferFunction(self.N[i], self.delta), T=np.linspace(0, tmax, tmax*10))
+                    result = ct.step_response(ct.tf(self.N[i], self.delta), T=np.linspace(0, tmax, tmax*10))
 
                 # coloca as legendas e o nome de cada gráfico
-                ax[i//2][i%2].plot(t, y)
+                # ax[i//2][i%2].plot(t, y)
+                ax[i//2][i%2].plot(result.time, result.outputs)
             ax[i//2][i%2].set(ylabel=titles[i])
             ax[i//2][i%2].grid()
             ax[i//2][i%2].set_xlim([0, tmax])
             # ax[i//2][i%2].legend([f"{self.aero.V0[jj]} m/s" for jj in range(len(self.aero.V))])
-        
+        ax[4][0].set(xlabel="t (s)")
+        ax[4][1].set(xlabel="t (s)")
+
         fig.tight_layout()  # ajusta o tamanho
 
         return
     
     def root_map (self):
         '''
-        Apresenta o gráfico dos polos e zeros do polinômio característico
+        Apresenta o gráfico dos polos e zeros do polinômio característico e retorna as frequências naturais e amortecidas
         '''
         # raizes do polinomio caracteristico
-        if self.aero._many_velocities:
-            r = np.array([np.roots(self.delta[i]) for i in range(self.aero._len_velocities)])
-        else:
-            r = np.roots(self.delta)
-
-        wd = np.sqrt(r.real**2 + r.imag**2)     # frequência natural
-        cd = r.real / np.where(wd == 0, 1, wd)                        # frequência de amortecimento
+        r = np.array([np.roots(self.delta[i]) for i in range(self.aero._len_velocities)]) if self.aero._many_velocities else np.roots(self.delta)
+        
+        wd = np.sqrt(r.real**2 + r.imag**2)         # frequência natural
+        cd = r.real / np.where(wd == 0, 1, wd)      # frequência de amortecimento
 
         plt.figure()
-        for i in range(self.aero._len_velocities):
-            plt.scatter(r[i].real, r[i].imag)
+        if self.aero._many_velocities:
+            for i in range(self.aero._len_velocities):
+                plt.scatter(r[i].real, r[i].imag)
+        else:
+            plt.scatter(r.real, r.imag)
+
         plt.grid()
         plt.xlabel('$\sigma$ (rad/s)')
         plt.ylabel('$j \gamma$ (rad/s)')
-        if self.aero._len_velocities > 1:
-            plt.legend([f"{self.aero.V0[jj]} m/s" for jj in range(self.aero._len_velocities)])
-            
+
+        # legenda do gráfico
+        plt.legend([f"{self.aero.V0[jj]} m/s" if self.aero._many_velocities else f"{self.aero.V0} m/s" for jj in range(self.aero._len_velocities)])
 
         return wd, cd
 
     def get_Lf_Sf (self, ro, wd, cd):
         '''
-        Retorna uma distância Lf e uma área Sf da empenagem vertical baseado nas frequências naturais
+        Retorna uma distância Lf e uma área Sf da empenagem vertical baseado nas frequências naturais\n
             ro : densidade do ar
             wd : frequência natural
             cd : frequência de amortecimento
@@ -312,17 +324,17 @@ class Dinamica_LateroDirecional:
         delta = np.sqrt(B**2 + 4*A**2*self.aero.m*self.aero.Iz)
 
         # distancia do CG até o CA da EV
-        Lf = [
+        Lf = np.array([
             (B + delta)/(2*A*self.aero.m),
             (B - delta)/(2*A*self.aero.m)
-        ]
+        ])
 
         # área da EV
-        Sf = [
+        Sf = np.array([
             (2*A**2*self.aero.m)/(B + delta),
             (2*A**2*self.aero.m)/(B - delta)
-        ]
-        return Lf, Sf
+        ])
+        return np.round(Lf, 3), np.round(Sf, 3)
 
 if __name__ == "__main__":
     import main

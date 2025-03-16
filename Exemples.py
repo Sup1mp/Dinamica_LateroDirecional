@@ -307,13 +307,20 @@ if __name__ == "__main__":
 
     print(f"\nomega_d: {np.round(w, 3)}\nzeta_d: {np.round(c, 3)}\nTr: {tr} s\nTs: {ts} s")
     
-    A, B = din.A_B()    # calculo matrizes A e B
-    G = din.G()         # calculo matriz G e N
+    A, B = din.A_B()        # calculo matrizes A e B
+    delta, N = din.G()      # calculo matriz G e N
+
+    # Matrizes
+    # print(f"A: {np.round(A, 3)}")
+    # print(f"B: {np.round(B, 3)}")
+    # print(f"N: {np.round(N, 3)}")
+
+    print(f"Delta: {np.round(delta, 3)}")
 
     din.step()
     din.root_map()
 
-    ro = getAtmosphere(20000)[2]
+    ro = ft2m(getAtmosphere(20000)[2])
     Lf, Sf = din.get_Lf_Sf(ro, w, c)
     print(f"Lf: {Lf}\nSf: {Sf}")
 
