@@ -41,9 +41,8 @@ Este projeto constitui no meu TCC em Engenharia Mecânica e possui a finalidade 
   - MIL-F-8785C, U.S Military, 1980
 
 # Documentação
-## AeroSurface (S, b, mac, c12 = None, th = None)
+## **Aeronave.AeroSurface (S: _float_, b: _float_, mac: _float_, c12: _list_ = None, th: _float_ = None)**
 Classe básica de `Superfícies Aerodinâmicas` (Asa, Empenagem Horizontal e Vertical)
-
 |Métodos | Descrição | Inputs|
 |---|---|---|
 |set_CL | Define os valores dos coeficentes de sustentação da superfície, se não for chamada coeficientes são definidos como nulos| CL0, CLa|
@@ -54,27 +53,38 @@ Classe básica de `Superfícies Aerodinâmicas` (Asa, Empenagem Horizontal e Ver
 |estimate_CLa | Estima o valor de CLa com base nas equações de Jan Roskan e do Ektins | K=0.9, M=0|
 |estimate_CDa | Estima o valor de CDa com base nas equações de Jan Roskan | ro, V0, m|
 
-## Wing (S, b, mac, c12 = None, th = None, Cm_CA = 0)
-Classe filha de AeroSurface para representar a `Asa`
 
+## **Aeronave.Aircraft (wing: _Wing_, fin: _Fin_, tail: _Tail_, body: _Body_, V0: _float/list_)**
+Classe que representa a `aeronave` completa
 |Métodos | Descrição | Inputs|
 |---|---|---|
-|downwash | Retorna o valor do DownWash teórico baseado no Nelson | |
+|derivatives | Calcula as derivadas aerodinâmicas das superefícies | dCL_day, dCD_day, dCL_dah, dCDy_de, CDy, CLy, cy: _list_, ch: _list_|
+|set_angles | | alpha: _float/list_ = 0, theta: _float/list_ = 0|
+|set_control | | aileron: _Aileron_, elevator: _Elevator_, rudder : _Rudder_|
+|set_fin | | lf: _float_, Lf: _float_, hf: _float_|
+|set_mass | | ro: _float/list_, mass: _float_, Ix: _float_, Iz: _float_, Ixz: _float_|
+|set_tail | | lt: _float_, Lt: _float_, ht: _float_|
+|estimate_CLa | | k: _float_, M = 0|
+|estimate_CLd | | M = 0|
+|estimate_CDa | | ro: _float_|
+|estimate_Coefs | | k: _float_, ro : _float_, M = 0|
+|get_CL_eq | | |
+|get_CLa | | |
+|get_CDa | | |
+|get_derivatives | | |
+|curve | Retorna o tempo para completar uma curva e a taxa de curvatura respectivamente | phi|
 
-## Tail (S, b, mac, c12 = None, th = None)
-Classe filha de AeroSurface para representar a `Empenagem Horizontal` (EH)
 
-## Fin (S, b, c12, th = None, k = 1)
-Classe filha de AeroSurface para representar a `Empenagem Vertical` (EV)
+## **Aeronave.Aileron (S: _float_, c: _float_, y1: _float_, y2: _float_)**
+Classe filha de ControlSurface que representa o `Aileron`, superfície de controle da Asa, responsável pela rolagem
 
-|Métodos | Descrição | Inputs|
-|---|---|---|
-|effective_AR | Retorna o valor de AR efetivo da EV considderando influência da EH (não funciona ainda) | AR_B_AR, AR_HB_AR, KH|
-|chord | Retorna a corda local na coordenada h da EV, considerada que a EV possui formato trapezoidal alinhado no bordo de fuga | h|
 
-## ControlSurface (S, c)
+## **Aeronave.Body (Sl: _float_, h: _float_)**
+Classe que representa a `Fuselagem`
+
+
+## **Aeronave.ControlSurface (S: _float_, c: _float_)**
 Classe básica para as `Superfíces de Comando` (Aileron, Leme e Profundor)
-
 |Métodos | Descrição | Inputs|
 |---|---|---|
 |set_CLd | Define o Valor do coeficiente de sustentação em função da deflexão da superfície | CLd|
@@ -83,17 +93,36 @@ Classe básica para as `Superfíces de Comando` (Aileron, Leme e Profundor)
 |estimate_CLd | Estima do valor de CLd da superfície de controle com base nas equações do Ektins | surf, M=0|
 |TAU | Retorna o valor de $\tau$ com base no gráfico encontrado no Nelson | S|
 
-## Aileron (S, c, y1, y2)
-Classe filha de ControlSurface que representa o `Aileron`, superfície de controle da Asa, responsável pela rolagem
 
-## Elevator (S, c)
+## **Aeronave.Elevator (S: _float_, c: _float_)**
 Classe filha de ControlSurface que representa o `Profundor`, superfície de controle da EH, responsável pela cabragem
 
-## Rudder (S, c)
+
+## **Aeronave.Fin (S: _float_, b: _float_, c12: _list_, th: _float_ = None, k: _int_ = 1)**
+Classe filha de AeroSurface para representar a `Empenagem Vertical` (EV)
+|Métodos | Descrição | Inputs|
+|---|---|---|
+|effective_AR | Retorna o valor de AR efetivo da EV considderando influência da EH (não funciona ainda) | AR_B_AR, AR_HB_AR, KH|
+|chord | Retorna a corda local na coordenada h da EV, considerada que a EV possui formato trapezoidal alinhado no bordo de fuga | h|
+
+
+## **Aeronave.Rudder (S: _float_, c: _float_)**
 Classe filha de ControlSurface que representa o `Leme`, superfície de controle da EV, responsável pela guinada
 
-## Body (Sl, h)
-Classe que representa a `Fuselagem`
 
-## Aircraft (wing, fin, tail, body, V0)
-Classe que representa a aeronave como um todo
+## **Aeronave.Tail (S: _float_, b: _float_, mac: _float_, c12: _list_ = None, th: _float_ = None)**
+Classe filha de AeroSurface para representar a `Empenagem Horizontal` (EH)
+
+
+## **Aeronave.Wing (S: _float_, b: _float_, mac: _float_, c12: _list_ = None, th: _float_ = None, Cm_CA: _float_ = 0)**
+Classe filha de AeroSurface para representar a `Asa`
+|Métodos | Descrição | Inputs|
+|---|---|---|
+|downwash | Retorna o valor do DownWash teórico baseado no Nelson | |
+
+## **Util.util.mach(V0: _float/list_, alt: _float/list_)**
+
+
+
+
+
