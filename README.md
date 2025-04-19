@@ -10,10 +10,12 @@ Este projeto constitui no meu TCC em Engenharia Mecânica e possui a finalidade 
 ## Lista de demais variáveis
   - alpha = $\alpha$ : ângulo de ataque (°)
   - AR : alongamento da superfície
-  - b : envergadura da suprefície ($m$)
+  - b : envergadura da superfície ($m$)
   - c : corda da superfície (no geral de controle) ($m$)
   - c12 : lista com cordas na raiz e na ponta respectivamente ($m$)
   - inc : ângulo de incidência da superfície (°)
+  - lf : distância, no eixo x, entre os 𝐶_𝐴’s da asa e da EV [m]
+  - Lf : distância, no eixo x, entre o 𝐶_𝐺 e o 𝐶_𝐴 da EV [m]
   - lbd = $\lambda$ : afilamento da superfície
   - M : velocidade de mach da aeronave
   - m : massa ($kg$)
@@ -25,6 +27,10 @@ Este projeto constitui no meu TCC em Engenharia Mecânica e possui a finalidade 
   - V0 = $V_0$ : velocidade da aeronave ($m/s$)
   - V_c4 = $\Lambda_{c/4}$ : ângulo de enflexamento na posição de 1/4 de corda (°)
   - V_LE = $\Lambda_{LE}$ : ângulo de enflexamento no bordo de ataque (°)
+  - Vv : volume de cauda vertical
+  - Vh : volume de cauda horizontal
+  - y1 e y2 : distância, no eixo y, entre a linha de centro da fuselagem e o começo e final do aileron respectivamente
+
 
 ## Lista de Coeficientes
   - CLa = $C_{L_{\alpha}}$ : Coeficiente de sustentação em função do ângulo de ataque $\alpha$
