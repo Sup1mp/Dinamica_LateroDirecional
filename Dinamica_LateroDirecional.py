@@ -46,7 +46,7 @@ class Dinamica_LateroDirecional:
             [self.z, self.z]
         ])
 
-        return np.round(self.A, 4), np.round(self.B, 4)
+        return self.A, self.B
     
     def G (self):
         '''
@@ -108,7 +108,7 @@ class Dinamica_LateroDirecional:
             lv*(nr*yp - npp*yr - yphi) + nv*(lp*yr - lr*yp - ypsi) + yv*(lr*npp - lp*nr),
             lv*(nr*yphi - npp*ypsi) + nv*(lp*ypsi - lr*yphi),
             self.z
-        ]).transpose()
+        ]).transpose()*180/np.pi    # rad => deg
 
         Nv_e = np.array([
             ye,
@@ -132,7 +132,7 @@ class Dinamica_LateroDirecional:
             le*(nr*yv - nv*yr) + ne*(lv*yr - lr*yv) + ye*(lr*nv - lv*nr),
             -le*nv*ypsi + ne*lv*ypsi,
             self.z
-        ])
+        ])*180/np.pi    # rad/s => deg/s
 
         Np_c = np.array([
             lc,
@@ -140,7 +140,7 @@ class Dinamica_LateroDirecional:
             lc*(nr*yv - nv*yr) + nc*(lv*yr - lr*yv) + yc*(lr*nv - lv*nr),
             -lc*nv*ypsi + nc*lv*ypsi,
             self.z
-        ])
+        ])*180/np.pi    # rad/s => deg/s
 
         Nphi_e = np.array([
             self.z,
@@ -148,7 +148,7 @@ class Dinamica_LateroDirecional:
             -le*(nr + yv) + ne*lr + yc*lv,
             le*(nr*yv - nv*yr) + ne*(lv*yr - lr*yv) + yc*(lr*nv - lv*nr),
             -le*nv*ypsi + ne*lv*ypsi
-        ])
+        ])*180/np.pi    # rad/s => deg/s
 
         Nphi_c = np.array([
             self.z,
@@ -156,7 +156,7 @@ class Dinamica_LateroDirecional:
             -lc*(nr + yv) + nc*lr + yc*lv,
             lc*(nr*yv - nv*yr) + nc*(lv*yr - lr*yv) + yc*(lr*nv - lv*nr),
             -lc*nv*ypsi + nc*lv*ypsi
-        ])
+        ])*180/np.pi    # rad/s => deg/s
 
         Nr_e = np.array([
             ne,
@@ -164,7 +164,7 @@ class Dinamica_LateroDirecional:
             le*(nv*yp - npp*yv) + ne*(lp*yv - lv*yp) + ye*(lv*npp - lp*nv),
             le*nv*yphi - ne*lv*yphi,
             self.z
-        ])
+        ])*180/np.pi    # rad => deg
 
         Nr_c = np.array([
             nc,
@@ -172,7 +172,7 @@ class Dinamica_LateroDirecional:
             lc*(nv*yp - npp*yv) + nc*(lp*yv - lv*yp) + yc*(lv*npp - lp*nv),
             lc*nv*yphi - nc*lv*yphi,
             self.z
-        ])
+        ])*180/np.pi    # rad => deg
 
         Npsi_e = np.array([
             self.z,
@@ -180,7 +180,7 @@ class Dinamica_LateroDirecional:
             le*npp - ne*(lp + yv) + ye*nv,
             le*(nv*yp - npp*yv) + ne*(lp*yv - lv*yp) + ye*(lv*npp - lp*nv),
             le*nv*yphi - ne*lv*yphi
-        ])
+        ])*180/np.pi    # rad => deg
 
         Npsi_c = np.array([
             self.z,
@@ -188,7 +188,7 @@ class Dinamica_LateroDirecional:
             lc*npp - nc*(lp + yv) + yc*nv,
             lc*(nv*yp - npp*yv) + nc*(lp*yv - lv*yp) + yc*(lv*npp - lp*nv),
             lc*nv*yphi - nc*lv*yphi
-        ])
+        ])*180/np.pi    # rad => deg
 
         # matrix N
         self.N = [
@@ -254,10 +254,10 @@ class Dinamica_LateroDirecional:
 
         # organização dos titulos na ordem em que aparecem
         titles = ['$v_{\epsilon}$ (m/s)', '$v_{\zeta}$ (m/s)',
-                  '$r_{\epsilon}$ (rad/s)', '$r_{\zeta}$ (rad/s)',
-                  '$p_{\epsilon}$ (rad/s)', '$p_{\zeta}$ (rad/s)',
-                  '$\phi_{\epsilon}$ (rad)', '$\phi_{\zeta}$ (rad)',
-                  '$\psi_{\epsilon}$ (rad)', '$\psi_{\zeta}$ (rad)'
+                  '$r_{\epsilon}$ (deg/s)', '$r_{\zeta}$ (deg/s)',
+                  '$p_{\epsilon}$ (deg/s)', '$p_{\zeta}$ (deg/s)',
+                  '$\phi_{\epsilon}$ (deg)', '$\phi_{\zeta}$ (deg)',
+                  '$\psi_{\epsilon}$ (deg)', '$\psi_{\zeta}$ (deg)'
         ]
 
         for i in range(10):

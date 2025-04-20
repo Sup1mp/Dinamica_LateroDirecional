@@ -364,8 +364,8 @@ class Aircraft:
         self.b = body
         self.V0 = V0 if type(V0) == float else np.array(V0)
 
-        self._many_velocities = True if type(V0) == list else False
-        self._len_velocities = len(V0) if self._many_velocities else 1
+        self._many_velocities = True if type(self.V0) != float else False
+        self._len_velocities = len(self.V0) if self._many_velocities else 1
 
         self.set_angles() # inicializa os ângulos como zero
 
@@ -503,8 +503,18 @@ class Aircraft:
             theta : ang. de arfagem (deg)
         '''
         if self._many_velocities:
-            self.alpha = np.radians(alpha) if type(alpha) == list else np.radians([alpha for _ in range(self._len_velocities)])
-            self.theta = np.radians(theta) if type(theta) == list else np.radians([theta for _ in range(self._len_velocities)])
+            # tranforma angulos de float para listas com o mesmo tamanho de V0 usando o mesmo valor de float
+            self.alpha = np.radians(alpha) if type(alpha) != float else np.radians([alpha for _ in range(self._len_velocities)])
+            self.theta = np.radians(theta) if type(theta) != float else np.radians([theta for _ in range(self._len_velocities)])
+            
+            if type(alpha) != float and type(alpha) != int:
+                if len(alpha) != self._len_velocities :
+                    # caso tamanho da lista de ângulos não seja o mesmo de velocidades, raise error
+                    raise Exception("Alpha size don't mathce V0")
+                
+            if type(theta) != float and type(theta) != int:
+                if len(theta) != self._len_velocities:
+                    raise Exception("Theta size don't mathce V0")
         else:
             self.alpha = np.radians(alpha)
             self.theta = np.radians(theta)

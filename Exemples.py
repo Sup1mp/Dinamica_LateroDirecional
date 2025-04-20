@@ -130,7 +130,7 @@ def Dart_T51_Sailplane(modo: int = 1):
         elif modo == 2:
             # todos os dados dado no exemplo
             V0 = np.array([round(i*0.5144444, 3) for i in range(35, 90, 5)])
-            alpha_e = np.array([9.209, 6.161, 4.072, 2.577, 1.471, 0.63, -0.025, -0.544, -0.963, -1.306, -1.59])
+            alpha_e = [9.209, 6.161, 4.072, 2.577, 1.471, 0.63, -0.025, -0.544, -0.963, -1.306, -1.59]
             r = np.array([
             [18.025, -0.042, -0.403, 0.187, -0.505, 0.006, 0.056, -0.074, -0.028, 0.0120, -0.054, -0.235, 0, 0.070, 0, 0.173],
             [20.600, -0.047, -0.402, 0.145, -0.505, 0.009, 0.056, -0.055, -0.026, 0.0089, -0.054, -0.235, 0, 0.069, 0, 0.173],
@@ -291,8 +291,8 @@ def DR_1_AeroBat (modo: int = 1):
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     # EXEMPLO DART
-    # a, real = Dart_T51_Sailplane(modo = 2)
-    a = Boeing_747_100(modo=1)
+    a, real = Dart_T51_Sailplane(modo = 1)
+    # a = Boeing_747_100(modo=1)
 
     # comparação de erro
     # compara_derivadas(real, a.get_derivatives())
@@ -315,7 +315,7 @@ if __name__ == "__main__":
     # print(f"B: {np.round(B, 3)}")
     # print(f"N: {np.round(N, 3)}")
 
-    print(f"Delta: {np.round(delta, 3)}")
+    # print(f"Delta: {np.round(delta, 3)}")
 
     din.step()
     din.root_map()
