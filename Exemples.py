@@ -147,7 +147,7 @@ def Dart_T51_Sailplane(modo: int = 1):
         else:
             raise ValueError("modo desconhecido, colocar somente 1 ou 2")
         
-        alt = 1000 # m
+        alt = 20000 # m
         # alt = np.linspace(0, 10000, 11)
         T, P, ro, S = getAtmosphere(alt)
         # ro = 0.3809     # densidade do ar kg/m^3
@@ -170,6 +170,10 @@ def Dart_T51_Sailplane(modo: int = 1):
         w.set_CL(
               CL0 = 0.3875, # 1/rad
               CLa = 5.55    # 1/rad
+        )
+        w.set_CD(
+             CD0= 0.013,
+             CDa = 1.13
         )
         w.set_angles(
             T = 2,          # deg
@@ -321,8 +325,10 @@ if __name__ == "__main__":
     din.root_map()
 
     ro = ft2m(getAtmosphere(20000)[2])
-    Lf, Sf = din.get_Lf_Sf(ro, w, c)
-    print(f"Lf: {Lf}\nSf: {Sf}")
+    # Lf, Sf = din.get_Lf_Sf(ro, w, c)
+    # print(f"Lf: {Lf}\nSf: {Sf}")
+    Sf = din.get_Sf_for(ro, w, c)
+    print(f"\nSf real: {a.f.S}\nSf calc: {Sf}")
 
     # # Norma
     # from Norma import MILF8587C

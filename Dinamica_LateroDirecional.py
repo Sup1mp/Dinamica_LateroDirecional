@@ -311,30 +311,47 @@ class Dinamica_LateroDirecional:
 
         return wd, cd
 
-    def get_Lf_Sf (self, ro, wd, cd):
+    # def get_Lf_Sf (self, ro, wd, cd):
+    #     '''
+    #     Retorna uma distância Lf e uma área Sf da empenagem vertical baseado nas frequências naturais\n
+    #         ro : densidade do ar
+    #         wd : frequência natural
+    #         cd : frequência de amortecimento
+    #     '''
+    #     # baseado nas equações de aproximação das frequencias
+    #     A = 2*(wd**2)*self.aero.Iz/(ro*(self.aero.V0**2)*self.aero.f.CLa)
+    #     B = -self.aero.Iz/self.aero.f.CLa * (4*wd*cd*self.aero.m/(ro*self.aero.V0) + self.aero.b.Sl*self.aero.b.CDl)
+    #     delta = np.sqrt(B**2 + 4*A**2*self.aero.m*self.aero.Iz)
+
+    #     # distancia do CG até o CA da EV
+    #     Lf = np.array([
+    #         (B + delta)/(2*A*self.aero.m),
+    #         (B - delta)/(2*A*self.aero.m)
+    #     ])
+
+    #     # área da EV
+    #     Sf = np.array([
+    #         (2*A**2*self.aero.m)/(B + delta),
+    #         (2*A**2*self.aero.m)/(B - delta)
+    #     ])
+    #     return np.round(Lf, 3), np.round(Sf, 3)
+    
+    def get_Sf_for (self, ro, wd, cd):
         '''
         Retorna uma distância Lf e uma área Sf da empenagem vertical baseado nas frequências naturais\n
             ro : densidade do ar
             wd : frequência natural
             cd : frequência de amortecimento
         '''
-        # baseado nas equações de aproximação das frequencias
-        A = 2*(wd**2)*self.aero.Iz/(ro*(self.aero.V0**2)*self.aero.f.CLa)
-        B = -self.aero.Iz/self.aero.f.CLa * (4*wd*cd*self.aero.m/(ro*self.aero.V0) + self.aero.b.Sl*self.aero.b.CDl)
-        delta = np.sqrt(B**2 + 4*A**2*self.aero.m*self.aero.Iz)
 
-        # distancia do CG até o CA da EV
-        Lf = np.array([
-            (B + delta)/(2*A*self.aero.m),
-            (B - delta)/(2*A*self.aero.m)
-        ])
+        n = 4*cd*wd*self.aero.m*self.aero.Iz + \
+            ro*self.aero.V0*(self.aero.b.Sl*self.aero.b.CDl*self.aero.Iz - \
+                             self.aero.w.b*self.aero.w.c12[1]*self.aero.m*self.aero.w.get_CD(self.aero.alpha))
+        
+        d = ro*self.aero.V0*self.aero.f.CLa*(self.aero.Lf**2 * self.aero.m + self.aero.Iz)
 
-        # área da EV
-        Sf = np.array([
-            (2*A**2*self.aero.m)/(B + delta),
-            (2*A**2*self.aero.m)/(B - delta)
-        ])
-        return np.round(Lf, 3), np.round(Sf, 3)
+        return n/d
+
 
 if __name__ == "__main__":
     import main

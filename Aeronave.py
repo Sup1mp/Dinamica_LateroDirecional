@@ -8,7 +8,7 @@ from Util import cFit
 class AeroSurface:
     def __init__(self, S: float, b: float, mac: float, c12: list = None, th: float = None):
         '''
-        Surface object, parâmetros geométricos:
+        Surface object, parâmetros geométricos:\n
             S : área (m^2)
             b : envergadura (m)
             mac : corda média aerodinamica (m)
