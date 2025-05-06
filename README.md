@@ -47,86 +47,258 @@ Este projeto constitui no meu TCC em Engenharia Mecânica e possui a finalidade 
   - MIL-F-8785C, U.S Military, 1980
 
 # Documentação
-## **Aeronave.AeroSurface (S: _float_, b: _float_, mac: _float_, c12: _list_ = None, th: _float_ = None)**
-Classe básica de `Superfícies Aerodinâmicas` (Asa, Empenagem Horizontal e Vertical)
-|Métodos | Descrição | Inputs|
-|---|---|---|
-|set_CL | Define os valores dos coeficentes de sustentação da superfície, se não for chamada coeficientes são definidos como nulos| CL0, CLa|
-|set_CD | Define os valores dos coeficentes de arrasto da superfície, se não for chamada coeficientes são definidos como nulos | CD0, CDa|
-|get_CD | Retorna o valor de CD aproximado com base nas equações de Jan Roskan para o ângulo de ataque alpha desejado | alpha|
-|get_CL | Retorna o valor de CL aproximado linearmente para o ângulo de ataque desejado | alpha|
-|set_angles| Define os valores de ângulos importântes para a superfície, são convertidos para radianos | T=0, V_c4=0, V_LE=0, inc=0|
-|estimate_CLa | Estima o valor de CLa com base nas equações de Jan Roskan e do Ektins | K=0.9, M=0|
-|estimate_CDa | Estima o valor de CDa com base nas equações de Jan Roskan | ro, V0, m|
+## `Aeronave.AeroSurface (S: float, b: float, mac: float, c12: list = None, th: float = None)`
+**Descrição:**
+Classe base para as _Superfícies Aerodinâmicas_ (Asa, Empenagem Horizontal e Vertical) que possui diversos métodos comuns entre elas.
+
+**Inputs:**
+  - S: Área da superfície $[m]$
+  - b: Envergadura da superfície $[m]$
+  - mac: Corda Média aerodinâmica da superfície $[m]$
+  - c12: Lista com as cordas na Raiz e na Ponta da superfície, respectivamente. Caso não seja especificado, possuirá os valores de `mac` $[m]$
+  - th: Espessura percentual do perfil aerodinãmico
 
 
-## **Aeronave.Aircraft (wing: _Wing_, fin: _Fin_, tail: _Tail_, body: _Body_, V0: _float/list_)**
+### `Aeronave.AeroSurface.estimate_CDa (ro, V0, m)`
+**Descrição:**
+Estima o valor de CDa com base nas equações de Jan Roskan
+
+**Inputs:**
+  - ro: Densidade do Ar $[kg/m^3]$
+  - V0: Velocidade da aeronave $[m/s]$
+  - m: Massa da aeronave  $[kg]$
+
+**Outputs:**
+  - CDa: Coeficiente de Arrasto em função de $\alpha$ estimado
+
+  
+### `Aeronave.AeroSurface.estimate_CLa (K = 0.9, M = 0)`
+**Descrição:**
+Estima o valor de CLa com base nas equações de Jan Roskan e do Ektins
+
+**Inputs:**
+  - K:
+  - M: Número de Mach da aeronave, para voos com velocidades muito baixas pode ser aproximado para 0
+
+**Outputs:**
+  - CLa: Coeficiente de Sustentação em função de $\alpha$ estimado
+
+
+### `Aeronave.AeroSurface.get_CD (alpha)`
+**Descrição:**
+Retorna o valor de CD aproximado com base nas equações de Jan Roskan para o ângulo de ataque alpha desejado
+
+**Inputs:**
+  - alpha: Ângulo de ataque desejado da superfície $[deg]$
+
+**Outputs:**
+  - CD: Coeficiente de Arrasto para o alpha desejado
+
+
+### `Aeronave.AeroSurface.get_CL (alpha)`
+**Descrição:**
+Retorna o valor de CL aproximado linearmente para o ângulo de ataque desejado
+
+**Inputs:**
+  - alpha: Ângulo de ataque desejado da superfície $[deg]$
+
+**Outputs:**
+  - CD: Coeficiente de Arrasto para o alpha desejado
+
+
+### `Aeronave.AeroSurface.get_angles (T = 0, V_c4 = 0, V_LE = 0, inc = 0)`
+**Descrição:**
+Define os valores de ângulos importântes para a superfície, são convertidos para radianos
+
+**Inputs:**
+  - T: Ângulo de Diedro da superfície $[deg]$
+  - V_c4: Ângulo de Enflexamento em 1/4 da corda da superfície $[deg]$
+  - V_LE: Ângulo de Enflexamento no bordo de ataque da superfície $[deg]$
+  - inc: Ângulo de incidÊncia da superfície $[deg]$
+
+
+### `Aeronave.AeroSurface.set_CD (CD0, CDa)`
+**Descrição:**
+Define os valores dos coeficentes de arrasto da superfície, se não for chamada coeficientes são definidos como nulos.
+
+**Inputs:**
+  - CD0: Coeficiente de Arrasto para ângulo de ataque igual a 0 ($\alpha = 0$)
+  - CDa: Coeficiente de Arrasto em função do ângulo de ataque ($\alpha$) $[1/deg]$
+
+
+### `Aeronave.AeroSurface.set_CL (CL0 = None, CLa = None)`
+**Descrição:**
+Define os valores dos coeficentes de sustentação da superfície, se não for chamada coeficientes são definidos como nulos.
+
+**Inputs:**
+  - CL0: Coeficiente de Sustentação para ângulo de ataque igual a 0 ($\alpha = 0$)
+  - CLa: Coeficiente de Sustentação em função do ângulo de ataque ($\alpha$) $[1/deg]$
+
+
+## `Aeronave.Aircraft (wing: Wing, fin: Fin, tail: Tail, body: Body, V0: float | list)`
+**Descrição:**
 Classe que representa a `aeronave` completa
-|Métodos | Descrição | Inputs|
-|---|---|---|
-|derivatives | Calcula as derivadas aerodinâmicas das superefícies | dCL_day, dCD_day, dCL_dah, dCDy_de, CDy, CLy, cy: _list_, ch: _list_|
-|set_angles | | alpha: _float/list_ = 0, theta: _float/list_ = 0|
-|set_control | | aileron: _Aileron_, elevator: _Elevator_, rudder : _Rudder_|
-|set_fin | | lf: _float_, Lf: _float_, hf: _float_|
-|set_mass | | ro: _float/list_, mass: _float_, Ix: _float_, Iz: _float_, Ixz: _float_|
-|set_tail | | lt: _float_, Lt: _float_, ht: _float_|
-|estimate_CLa | | k: _float_, M = 0|
-|estimate_CLd | | M = 0|
-|estimate_CDa | | ro: _float_|
-|estimate_Coefs | | k: _float_, ro : _float_, M = 0|
-|get_CL_eq | | |
-|get_CLa | | |
-|get_CDa | | |
-|get_derivatives | | |
-|curve | Retorna o tempo para completar uma curva e a taxa de curvatura respectivamente | phi|
+
+### `Aeronave.Aircraft.curve (phi)`
+**Descrição:**
+Retorna o tempo para completar uma curva e a taxa de curvatura respectivamente
+
+### `Aeronave.Aircraft.derivatives (dCL_day, dCD_day, dCL_dah, dCDy_de, CDy, CLy, cy: list, ch: list)`
+**Descrição:**
+Calcula as derivadas aerodinâmicas da aeronave
+
+### `Aeronave.Aircraft.estimate_CDa (ro: float)`
+
+### `Aeronave.Aircraft.estimate_CLa (k: float, M = 0)`
+
+### `Aeronave.Aircraft.estimate_Cld (M = 0)`
+
+### `Aeronave.Aircraft.estimate_Coefs (k: float, ro : float, M = 0)`
+
+### `Aeronave.Aircraft.get_CDa (ro: float)`
+
+### `Aeronave.Aircraft.get_CL_eq ()`
+
+### `Aeronave.Aircraft.get_CLa ()`
+
+### `Aeronave.Aircraft.get_derivatives ()`
+
+### `Aeronave.Aircraft.set_angles (alpha: float | list = 0, theta: float | list = 0)`
+
+### `Aeronave.Aircraft.set_control (aileron: Aileron, elevator: Elevator, rudder : Rudder)`
+
+### `Aeronave.Aircraft.set_fin (lf: float, Lf: float, hf: float)`
+
+### `Aeronave.Aircraft.set_mass (ro: float | list, mass: float, Ix: float, Iz: float, Ixz: float)`
+
+### `Aeronave.Aircraft.set_tail (lt: float, Lt: float, ht: float)`
 
 
-## **Aeronave.Aileron (S: _float_, c: _float_, y1: _float_, y2: _float_)**
-Classe filha de ControlSurface que representa o `Aileron`, superfície de controle da Asa, responsável pela rolagem
+## `Aeronave.Aileron (S: float, c: float, y1: float, y2: float)`
+**Descrição:**
+Classe filha de `ControlSurface` que representa o _Aileron_, superfície de controle da Asa, responsável pela rolagem
+
+**Inputs:**
+  - S: Área do aileron $[m^2]$
+  - c: Cordar do aileron $[m]$
+  - y1: Distância, no eixo y, da primeira corda do aileron até a linha de centro da aeronave $[m]$
+  - y1: Distância, no eixo y, da última corda do aileron até a linha de centro da aeronave $[m]$
 
 
-## **Aeronave.Body (Sl: _float_, h: _float_)**
-Classe que representa a `Fuselagem`
+## `Aeronave.Body (Sl: float, h: float)`
+**Descrição:**
+Classe que representa a _Fuselagem_ da aeronave.
+
+**Inputs:**
+  - Sl: Área lateral da fuselagem $[m^2]$
+  - h: Altura da fuselagem $[m]$
 
 
-## **Aeronave.ControlSurface (S: _float_, c: _float_)**
-Classe básica para as `Superfíces de Comando` (Aileron, Leme e Profundor)
-|Métodos | Descrição | Inputs|
-|---|---|---|
-|set_CLd | Define o Valor do coeficiente de sustentação em função da deflexão da superfície | CLd|
-|set_CLa | Define o valor do coeficiente de sustentação em função de alpha | CLa|
-|estimate_Cla | Estima o valor de Cla, coeficiente de sustentação teórico 2D, da superfície de controle com base nas equações do Jan Roskan e do Ektins | surf, M=0|
-|estimate_CLd | Estima do valor de CLd da superfície de controle com base nas equações do Ektins | surf, M=0|
-|TAU | Retorna o valor de $\tau$ com base no gráfico encontrado no Nelson | S|
+## `Aeronave.ControlSurface (S: float, c: float)`
+**Descrição:**
+Classe básica para as _Superfíces de Comando_ (Aileron, Leme e Profundor)
+
+**Inputs:**
+  - S: Área da superfície $[m^2]$
+  - b: Envergadura da superfície $[m]$
+
+### `Aeronave.ControlSurface.estimate_CLd (surf: Fin | Tail | Wing, M: float = 0)`
+**Descrição:**
+Estima do valor de CLd da superfície de controle com base nas equações do Ektins
+
+**Inputs:**
+  - surf: Superfície à qual o controle se refere
+  - M: Número de MACH
+
+**Outputs:**
+  - CLd: Coeficiente de sustentação em função do ângulo de deflexão ($\delta$) estimado $[1/deg]$
+
+### `Aeronave.ControlSurface.estimate_Cla (surf: Fin | Tail | Wing, M: float = 0)`
+**Descrição:**
+Estima o valor de Cla, coeficiente de sustentação teórico 2D, da superfície de controle com base nas equações do Jan Roskan e do Ektins
+
+**Inputs:**
+  - surf: Superfície à qual o controle se refere
+  - M: Número de MACH
+
+**Outputs:**
+  - Cla: Coeficiente de sustentação teórico 2D estimado $[1/deg]$
+
+### `Aeronave.ControlSurface.set_CLa (CLa)`
+**Descrição:**
+Define o valor do coeficiente de sustentação em função de alpha
+
+**Inputs:**
+  - CLa: Coeficiente de Sustentação em função de $\alpha$ desejado $[1/deg]$
+
+### `Aeronave.ControlSurface.set_CLd (CLd)`
+**Descrição:**
+Define o Valor do coeficiente de sustentação em função da deflexão da superfície
+
+**Inputs:**
+  - CLd: Coeficiente de Sustentação em função da deflexão $\delta$ desejado $[1/deg]$
+
+### `Aeronave.ControlSurface.TAU (S: float)`
+**Descrição:**
+Retorna o valor de $\tau$ com base no gráfico encontrado no Nelson
+
+**Inputs:**
+  - S: Área da superfície referente ao controle.
+  
+
+## `Aeronave.Elevator (S: float, c: float)`
+Classe filha de `ControlSurface` que representa o _Profundor_, superfície de controle da EH, responsável pela cabragem
 
 
-## **Aeronave.Elevator (S: _float_, c: _float_)**
-Classe filha de ControlSurface que representa o `Profundor`, superfície de controle da EH, responsável pela cabragem
+## `Aeronave.Fin (S: float, b: float, c12: list, th: float = None, k: int = 1)`
+Classe filha de `AeroSurface` para representar a _Empenagem Vertical_ (EV)
+
+**Inputs:**
+  - k: Número de EV's presentes na aeronave
 
 
-## **Aeronave.Fin (S: _float_, b: _float_, c12: _list_, th: _float_ = None, k: _int_ = 1)**
-Classe filha de AeroSurface para representar a `Empenagem Vertical` (EV)
-|Métodos | Descrição | Inputs|
-|---|---|---|
-|effective_AR | Retorna o valor de AR efetivo da EV considderando influência da EH (não funciona ainda) | AR_B_AR, AR_HB_AR, KH|
-|chord | Retorna a corda local na coordenada h da EV, considerada que a EV possui formato trapezoidal alinhado no bordo de fuga | h|
+### `Aeronave.Fin.chord (h: float)`
+**Descrição:**
+Retorna a corda local na coordenada h da EV, considerada que a EV possui formato trapezoidal alinhado no bordo de fuga
+
+**Inputs:**
+  - h: Altura da corda local ao longo da envergadura, ou seja, _h_ varia de 0 a _b_ $[m]$
 
 
-## **Aeronave.Rudder (S: _float_, c: _float_)**
-Classe filha de ControlSurface que representa o `Leme`, superfície de controle da EV, responsável pela guinada
+### `Aeronave.Fin.effective_AR (AR_B_AR, AR_HB_AR, KH)`
+**Descrição:**
+Retorna o valor de AR efetivo da EV considderando influência da EH (não funciona ainda)
 
 
-## **Aeronave.Tail (S: _float_, b: _float_, mac: _float_, c12: _list_ = None, th: _float_ = None)**
-Classe filha de AeroSurface para representar a `Empenagem Horizontal` (EH)
+## `Aeronave.Rudder (S: float, c: float)`
+Classe filha de `ControlSurface` que representa o _Leme_, superfície de controle da EV, responsável pela guinada
 
 
-## **Aeronave.Wing (S: _float_, b: _float_, mac: _float_, c12: _list_ = None, th: _float_ = None, Cm_CA: _float_ = 0)**
-Classe filha de AeroSurface para representar a `Asa`
-|Métodos | Descrição | Inputs|
-|---|---|---|
-|downwash | Retorna o valor do DownWash teórico baseado no Nelson | |
+## `Aeronave.Tail (S: float, b: float, mac: float, c12: list = None, th: float = None)`
+**Descrição:**
+Classe filha de `AeroSurface` para representar a _Empenagem Horizontal_ (EH)
 
-## **Util.util.mach(V0: _float/list_, alt: _float/list_)**
+
+## `Aeronave.Wing (S: _float_, b: float, mac: float, c12: list = None, th: float = None, Cm_CA: float = 0)`
+**Descrição:**
+Classe filha de `AeroSurface` para representar a _Asa_
+
+**Inputs:**
+  - Cm_CA: Coeficiente de momento da asa em torno do Centro Aerodinâmico
+
+
+### `Aeronave.Wing.downwash ()`
+**Descrição:**
+Retorna o valor do DownWash teórico baseado no Nelson
+
+
+## `Util.util.mach(V0: float | list, alt: float | list)`
+**Descrição:**
+Calcula o número de MACH de uma dada velocidade para uma certa altitude, utilizando interpolações e aproximações de dados atmosféricos.
+
+**Inputs:**
+  - V0: Velocidade desejada $[m/s]$
+  - alt: Altitude desejada $[m]$
 
 
 
