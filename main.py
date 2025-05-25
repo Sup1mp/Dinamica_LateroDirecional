@@ -6,7 +6,7 @@ import numpy as np
 from Dinamica_LateroDirecional import Dinamica_LateroDirecional
 from Norma import MILF8587C
 
-modo = 2
+modo = 1
 
 # Exemplo utilizado
 a, real = ex.Dart_T51_Sailplane(modo = modo)

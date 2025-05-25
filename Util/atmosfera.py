@@ -74,4 +74,21 @@ data = [
 # Criar dataframe
 columns = ["Altitude(m)", "Temperature(K)", "Pressure(N/m^2)", "Density(kg/m^3)", "Speed of Sound(m/s)", "Kinematic Viscosity(m^2/s)"]
 df = pd.DataFrame(data, columns=columns)
-df.to_json("Atmospheric_data.json")
+
+# salvar dados
+# df.to_json("Atmospheric_data.json")
+
+import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots(1, 4)
+
+ax[0].set(ylabel=columns[0])
+for i in range(4):
+        
+    ax[i].plot(df[columns[i+1]], df["Altitude(m)"], 'k')
+    ax[i].set(xlabel=columns[i+1])
+    ax[i].grid()
+
+# fig.tight_layout()  # ajusta o tamanho
+
+plt.show()

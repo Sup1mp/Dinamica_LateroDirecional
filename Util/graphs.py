@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score
 from scipy.optimize import curve_fit
 from math import ceil
-from Util.util import get_json, save_json
+from util import get_json, save_json
 
 def fitGraph (x, y, d, name):
     
@@ -340,9 +340,9 @@ if __name__ == "__main__":
     # plt.show()
 
     # fit dos coeficientes de K1 ===============================================================================================
-    # k1 = get_coefs("K1")
+    # k1 = get_json("K1")
 
-    # multifit([-0.1, -0.2, -0.4, -0.6, -0.7, -0.8, -0.9], 6, k1['K1_01'], k1['K1_02'], k1['K1_04'], k1['K1_06'], k1['K1_07'], k1['K1_08'], k1['K1_09'])
+    # multifit([-0.1, -0.2, -0.4, -0.6, -0.7, -0.8, -0.9], 10, k1['K1_01'], k1['K1_02'], k1['K1_04'], k1['K1_06'], k1['K1_07'], k1['K1_08'], k1['K1_09'])
 
     # interpolação com dataframe ===============================================================================================
     # import pandas as pd
