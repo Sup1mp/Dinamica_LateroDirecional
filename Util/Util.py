@@ -126,7 +126,7 @@ def compara_derivadas (real, calc):
     print(f"Erro Percentual:\n{err}")
     
     st = np.round(err.describe(), 4)
-    print(f"Média Erros:\n{st.loc['mean']}\nMédia Total: {st.loc['mean'].sum()}")
+    print(f"Média Erros:\n{st.loc['mean']}\nMédia Total: {st.loc['mean'].sum()/len(st.loc['mean'])}")
     return
 
 def getAtmosphere (altitude):

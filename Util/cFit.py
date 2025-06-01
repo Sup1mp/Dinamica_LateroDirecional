@@ -34,23 +34,23 @@ def Cld (t_c, cf_c, Cla_Cla_t):
     # Cld_07 = np.array([-0.41396058,  0.98766589, -0.89591411,  0.72072819,  0.31629528])
     # # r² : 0.9965485499970037
 
-    a = np.polyval(np.array([-1106.09364955,  3141.89348546, -2912.71952857,   878.40801028]), cf_c)
+    a = np.polyval(np.array([-1106.09364955,  3141.89348546, -2912.71952857,   878.40801028]), Cla_Cla_t)
     # r² : 0.9910946477006675
 
-    b = np.polyval(np.array([ 1535.09229464, -4323.4329261 ,  3979.33427803, -1192.70645244]), cf_c)
+    b = np.polyval(np.array([ 1535.09229464, -4323.4329261 ,  3979.33427803, -1192.70645244]), Cla_Cla_t)
     # r² : 0.9813068617955021
 
-    c = np.polyval(np.array([ -762.49666592,  2132.61954378, -1950.89867755,   581.34060383]), cf_c)
+    c = np.polyval(np.array([ -762.49666592,  2132.61954378, -1950.89867755,   581.34060383]), Cla_Cla_t)
     # r² : 0.9774636821755441
 
-    d = np.polyval(np.array([ 153.60554985, -429.01078602,  390.47437052, -115.09150056]), cf_c)
+    d = np.polyval(np.array([ 153.60554985, -429.01078602,  390.47437052, -115.09150056]), Cla_Cla_t)
     # r² : 0.9889530781715157
 
-    e = np.polyval(np.array([ -5.90609821,  16.21850973, -12.37903544,   3.0605189 ]), cf_c)
+    e = np.polyval(np.array([ -5.90609821,  16.21850973, -12.37903544,   3.0605189 ]), Cla_Cla_t)
     # r² : 0.999981611406111
 
     # Cld corrigido
-    return np.polyval(np.array([a, b, c, d, e]), Cla_Cla_t) * Cld_t(t_c, cf_c)
+    return np.polyval(np.array([a, b, c, d, e]), cf_c) * Cld_t(t_c, cf_c)
 
 def Cld_t(t_c, cf_c):
     '''
@@ -103,8 +103,8 @@ def K1 (cf_c, Aw):
         cf_c : razão entre a corda da superfície de controle e a corda do perfil em que está
         Aw : Aspect Ratio (alongamento) da asa
     '''
-    from util import get_json
-    # from Util.util import get_json
+    # from util import get_json
+    from Util.util import get_json
     from scipy.interpolate import interpn
     import pandas as pd
 
@@ -116,7 +116,7 @@ def K1 (cf_c, Aw):
     k1 = np.reshape(data['K1'], stru)   # estrutura resposta como os valores
 
     # força e limita AR maximo para 10 (limite da interpolação)
-    return interpn(points, k1, (ag_Cl(cf_c), min(Aw, 10)))[0]
+    return interpn(points, k1, (max(-1, min(-0.1, ag_Cl(cf_c))), min(max(0.5, Aw), 10)))[0]
 
     # K1_01 = 0.011888507746894404/(1.5611044248944355*np.log(0.005821683478021238*Aw + 1.81342892061381) - 0.9247049739637537) + 0.9725943999683583
     # # r² : 0.9997067471885825
@@ -139,7 +139,7 @@ def K1 (cf_c, Aw):
     # K1_09 = 0.4499060868722573/(0.031959913406766176*np.log(2.331413923458465*Aw + 0.5465037936517184) + 0.6078786494289624) + 0.34631570365359404
     # # r² : 0.996164683462444
 
-    # ag = min(-1, max(-0.1, ag_Cl(cf_c)))
+    # ag = max(-1, min(-0.1, ag_Cl(cf_c)))
 
     # a = np.polyval(np.array([ 49928.90291299, 112410.36408702,  88667.33637401,  29318.03942311,
     #      3963.18938109,    177.47671377]), ag)
@@ -167,11 +167,10 @@ def K1 (cf_c, Aw):
 
     # return a/(b*np.log(c*Aw + d) + e) + f
 
-def K2 (y1, y2, bw, lbd):
+def K2 (y, bw, lbd):
     '''
-    Fator de envergadura do flap K2 obtido na figura B.2,3 do Etkins
-        y1 : posição inical da superfície de controle
-        y2 : posição final da suerpfície de controle
+    Fator de envergadura do flap K2 obtido na figura B.2,3 do Etkins\n
+        y : posição da superfície de controle em y
         bw : envergadura da asa
         lbd : afilamento da asa
     '''
@@ -196,10 +195,7 @@ def K2 (y1, y2, bw, lbd):
     d = np.polyval(np.array([ 0.0074612 , -0.02776384,  0.02070015]), lbd)
     # r² : 1.0
 
-    eta1 = 2*y1/bw   # eta inicial
-    eta2 = 2*y2/bw   # eta final
-
-    return np.polyval(np.array([a, b, c, d]), eta2) - np.polyval(np.array([a, b, c, d]), eta1)
+    return np.polyval(np.array([a, b, c, d]), 2*y/bw)
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
@@ -215,7 +211,7 @@ if __name__ == "__main__":
     # Cld
 
     # t_c = np.linspace(0, 0.15)
-    # cf_c = np.linspace(0.2, 0.5)
+    # cf_c = np.linspace(0.1, 0.5)
     # Cla_Cla_t = np.linspace(0.7, 0.98, 5)
     
     # for i in Cla_Cla_t:
@@ -260,7 +256,21 @@ if __name__ == "__main__":
 
     plt.ylabel("K1")
     plt.xlabel('$A_{w}$')
-    plt.legend(['$(\\alpha_{\delta})_{C_{l}}$ = '+str(round(i, 2)) for i in ag])
+    plt.legend(['$(\\alpha_{\delta})_{C_{l}}$ = '+str(round(max(-1, min(-0.1, i)), 2)) for i in ag])
+    #==============================================================================================
+    # K2
+
+    # lbd = np.linspace(0, 1, 5)
+    # bw = 4.5
+    # y = np.linspace(0, bw/2)
+    
+    # for l in lbd:
+    #     plt.plot(2*y/bw, K2(1, y, bw, l))
+    
+    # plt.xlabel("$\eta$")
+    # plt.ylabel("K2")
+    # plt.legend(['$\eta$ = '+str(round(i, 2)) for i in lbd])
+
     #==============================================================================================
     plt.grid()
     plt.show()

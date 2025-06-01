@@ -254,7 +254,8 @@ class Aileron (ControlSurface):
         '''
         super().estimate_CLd(surf, M)
 
-        K2 = cFit.K2(self.y1, self.y2, surf.b, surf.lbd)    # Fator de envergadura para flaps
+        # Fator de envergadura para flaps
+        K2 = cFit.K2(self.y2, surf.b, surf.lbd) - cFit.K2(self.y1, surf.b, surf.lbd)
         # Figura B.2,3 do Etkins
 
         self.CLd = self.CLd * K2
