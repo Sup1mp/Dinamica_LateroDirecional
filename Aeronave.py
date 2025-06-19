@@ -177,7 +177,7 @@ class ControlSurface:
         K1 = cFit.K1(cf_c, surf.AR)     # fator Flap-chord
         # Figura B.2,2 do Etkins
 
-        K = 1
+        K = 0.9
         Cla = 1.05*K*cFit.Cla_t(t_c)/ np.sqrt(1 - M**2)
         # Equação B.1,1 do Etkins
 
@@ -406,10 +406,10 @@ class Aircraft:
             return CDy * cy * y**2                      # wing contribution
         
         def Le_int ():
-            return cy * y
+            return cy_a * y_a
         
         def Ne_int ():
-            return dCDy_de * cy * y
+            return dCDy_de * cy_a * y_a
 
         s = self.w.b/2               # pra facilitar
 
@@ -418,6 +418,15 @@ class Aircraft:
 
         y = np.linspace(0, s, n1)
         h = np.linspace(0, self.f.b, n2)
+
+        cy_a = np.array([cy[i] if self.a.y1 <= y[i] <= self.a.y2 else 0 for i in range(n1)])
+        y_a = np.array([y[i] if self.a.y1 <= y[i] <= self.a.y2 else 0 for i in range(n1)])
+
+        print(self.a.y1)
+        print(y)
+        print(self.a.y2)
+        print(cy_a)
+        print(y_a)
 
         # derivadas de "v" (sideslip)==============================================================
         # Side force
@@ -706,6 +715,33 @@ class Aircraft:
         # equação 2.26 do COOK
 
         return t_c, turn_rate
+    
+    def update_fin (self, new_Sf = None, new_bf = None, new_c12 = None, new_th = None, new_k = None, new_lf = None, new_Lf = None, new_hf = None):
+        '''
+        Atualiza os dados da EV, os dados não modificados não serão alterados:\n
+            new_Sf : nova área da superfície (m^2)
+            new_bf : nova envergadura (m)
+            new_C12 : novas cordas na raiz e na ponta, respectivamente [raiz, ponta] (m)
+            new_th : nova espessura de perfil aerodinâmico
+            new_k : nova quantidade de EV's
+            new_lf : nova distância do CA da asa até o CA da EV no eixo x (m)
+            new_Lf : nova distância do CG até o CA da EV no eixo x (m)
+            new_hf : nova altura do eixo x até o CA da EV no eixo z (m)
+        '''
+
+        Sf = new_Sf if new_Sf != None else self.f.S
+        bf = new_bf if new_bf != None else self.f.b
+        c12 = new_c12 if new_c12!= None else self.f.c12
+        th = new_th if new_th != None else self.f.th
+        k = new_k if new_k != None else self.f.k
+        lf = new_lf if new_lf != None else self.lf
+        Lf = new_Lf if new_Lf != None else self.Lf
+        hf = new_hf if new_hf != None else self.hf
+
+        self.f = Fin(Sf, bf, c12, th, k)
+        self.set_fin(lf, Lf, hf)
+
+        return
 #=======================================================================================================
 if __name__ == "__main__":
     import main

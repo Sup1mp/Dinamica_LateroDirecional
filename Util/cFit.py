@@ -224,7 +224,7 @@ if __name__ == "__main__":
     #==============================================================================================
     # Cld_t
 
-    # t_c = np.linspace(0, 0.15, 5)
+    # t_c = np.linspace(0, 0.15, 3)
     # cf_c = np.linspace(0.1, 0.5)
 
     # for t in t_c:
@@ -245,18 +245,18 @@ if __name__ == "__main__":
     #==============================================================================================
     # K1
 
-    cf_c = np.linspace(0.1, 1, 5)
-    Aw = np.linspace(1, 10)
-    ag = []
+    # cf_c = np.linspace(0.1, 1, 5)
+    # Aw = np.linspace(1, 10)
+    # ag = []
     
-    for c in cf_c:
-        for a in Aw:
-            plt.plot(a, K1(c, a))
-        ag.append(ag_Cl(c))
+    # for c in cf_c:
+    #     for a in Aw:
+    #         plt.plot(a, K1(c, a))
+    #     ag.append(ag_Cl(c))
 
-    plt.ylabel("K1")
-    plt.xlabel('$A_{w}$')
-    plt.legend(['$(\\alpha_{\delta})_{C_{l}}$ = '+str(round(max(-1, min(-0.1, i)), 2)) for i in ag])
+    # plt.ylabel("K1")
+    # plt.xlabel('$A_{w}$')
+    # plt.legend(['$(\\alpha_{\delta})_{C_{l}}$ = '+str(round(max(-1, min(-0.1, i)), 2)) for i in ag])
     #==============================================================================================
     # K2
 
@@ -265,7 +265,7 @@ if __name__ == "__main__":
     # y = np.linspace(0, bw/2)
     
     # for l in lbd:
-    #     plt.plot(2*y/bw, K2(1, y, bw, l))
+    #     plt.plot(2*y/bw, K2(y, bw, l))
     
     # plt.xlabel("$\eta$")
     # plt.ylabel("K2")
