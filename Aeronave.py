@@ -422,12 +422,6 @@ class Aircraft:
         cy_a = np.array([cy[i] if self.a.y1 <= y[i] <= self.a.y2 else 0 for i in range(n1)])
         y_a = np.array([y[i] if self.a.y1 <= y[i] <= self.a.y2 else 0 for i in range(n1)])
 
-        print(self.a.y1)
-        print(y)
-        print(self.a.y2)
-        print(cy_a)
-        print(y_a)
-
         # derivadas de "v" (sideslip)==============================================================
         # Side force
         self.Yv = (self.b.Sl*self.b.CDl - self.f.S*self.f.CLa)/self.w.S

@@ -295,8 +295,8 @@ def DR_1_AeroBat (modo: int = 1):
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     # EXEMPLO DART
-    a, real = Dart_T51_Sailplane(modo = 1)
-    # a = Boeing_747_100(modo=1)
+    # a, real = Dart_T51_Sailplane(modo = 1)
+    a = Boeing_747_100(modo=1)
 
     # comparação de erro
     # compara_derivadas(real, a.get_derivatives())

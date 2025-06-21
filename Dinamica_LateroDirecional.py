@@ -338,7 +338,7 @@ class Dinamica_LateroDirecional:
     
     def get_Sf_for (self, ro, wd, cd):
         '''
-        Retorna uma distância Lf e uma área Sf da empenagem vertical baseado nas frequências naturais\n
+        Retorna uma área Sf da empenagem vertical baseado nas frequências naturais\n
             ro : densidade do ar
             wd : frequência natural
             cd : frequência de amortecimento
@@ -348,7 +348,7 @@ class Dinamica_LateroDirecional:
             ro*self.aero.V0*(self.aero.b.Sl*self.aero.b.CDl*self.aero.Iz - \
                              self.aero.w.b*self.aero.w.c12[1]*self.aero.m*self.aero.w.get_CD(self.aero.alpha))
         
-        d = ro*self.aero.V0*self.aero.f.CLa*(self.aero.Lf**2 * self.aero.m + self.aero.Iz)
+        d = ro*self.aero.V0*self.aero.f.CLa*(self.aero.Lf*self.aero.lf * self.aero.m + self.aero.Iz)
 
         return n/d
 
