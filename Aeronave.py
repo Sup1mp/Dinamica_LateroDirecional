@@ -21,72 +21,86 @@ class AeroSurface:
         self.c12 = c12 if c12 != None else [mac, mac]
         self.th = th*self.mac if th != None else th
 
-        self.x_CA = self.mac/4                          # posição do centro aerodinamico
-        self.AR = (self.b**2) / self.S                  # alongamento
-        self.lbd = self.c12[1] / self.c12[0]            # afilamento
+        self.__params__()   # calcula os parâmetros principais de um perfil aerodinâmico
 
-        self.set_angles()   # ângulos = 0
+        self.set_angles(0,0,0,0)   # ângulos = 0
         self.__coefs__()    # inicializa coeficientes nulos
 
         return
     
     def __coefs__(self):
+        # inicializa coeficientes como nulos
         self.CL0 = self.CLa = None
         self.CD0 = self.CDa = None
+        self._noCDset = True   # indica se CD foi colocado pelo usuário ou não
+        self._noCLset = True   # indica se CL foi colocado pelo usuário ou não
         return
     
+    def __params__(self):
+        # calcula os parâmetros principais de um perfil aerodinâmico
+        self.x_CA = self.mac/4                          # posição do centro aerodinamico
+        self.AR = (self.b**2) / self.S                  # alongamento
+        self.lbd = self.c12[1] / self.c12[0]            # afilamento
+        return
+
     def set_CL (self, CL0, CLa):
         '''
         Coeficientes aerodinâmicos:\n
-            CLa : derivada do coef sustentação em relação a alpha
-            CL0 : coef sustentação em alpha = 0
+            CLa : derivada do coef sustentação em relação a alpha (1/deg)
+            CL0 : coef sustentação em alpha = 0 (1/deg)
         '''
-        self.CLa = CLa
-        self.CL0 = CL0
+        self.CLa = CLa*180/np.pi
+        self.CL0 = CL0*180/np.pi
+
+        self._noCLset = False   # indica que o CL foi setado pelo usuário
 
         return
     
     def set_CD (self, CD0, CDa):
         '''
         Coeficientes aerodinâmicos:\n
-            CDa : derivada do coef de arrasto em relação a alpha
-            CD0 : coef de arrasto em alpha = 0
+            CDa : derivada do coef de arrasto em relação a alpha (1/deg)
+            CD0 : coef de arrasto em alpha = 0  (1/deg)
         '''
-        self.CDa = CDa
-        self.CD0 = CD0
+        self.CDa = CDa*180/np.pi
+        self.CD0 = CD0*180/np.pi
+
+        self._noCDset = False   # indica que o CD foi setado pelo usuário
 
         return
     
     def get_CD (self, alpha):
         '''
-        Retorna CD para ângulo de ataque alpha
+        Retorna CD (1/rad) para ângulo de ataque alpha (deg)
         '''
-        # Oswald's factor
-        e = 1/(1.05 + 0.007*math.pi*self.AR)    # Obert 5 <= AR <= 25
-        # e = 1.78*(1 - 0.045*self.AR**0.68) - 0.64   # internet
+        # # Oswald's factor
+        # e = 1/(1.05 + 0.007*math.pi*self.AR)    # Obert 5 <= AR <= 25
+        # # e = 1.78*(1 - 0.045*self.AR**0.68) - 0.64   # internet
         
-        # pode ser deduzida a partir da equação 3.1 do "Methods for estimating stability and control\
-        #  derivatives of conventional subsonic airplanes" de Jan Roskam
-        return self.CD0 + ((self.CLa * (alpha + self.inc))**2)/(math.pi*self.AR*e)
+        # # pode ser deduzida a partir da equação 3.1 do "Methods for estimating stability and control\
+        # #  derivatives of conventional subsonic airplanes" de Jan Roskam
+        # return self.CD0 + ((self.CLa * (alpha + self.inc))**2)/(math.pi*self.AR*e)
+        return self.CD0 + self.CDa*(np.radians(alpha) + self.inc)
     
     def get_CL (self, alpha):
         '''
-        Retorna CL para ângulo de ataque alpha
+        Retorna CL (1/rad) para ângulo de ataque alpha (deg)
         '''
-        return self.CL0 + self.CLa * (alpha + self.inc)
+        return self.CL0 + self.CLa * (np.radians(alpha) + self.inc)
 
-    def set_angles (self, T: float = 0, V_c4: float = 0, V_LE: float = 0, inc: float = 0):
+    def set_angles (self, T: float = None, V_c4: float = None, V_LE: float = None, inc: float = None):
         '''
-        Ângulos (se não declarados são considerados 0°):\n
+        Ângulos da superfície:\n
             T : ang diedro (deg)
             V_c4 : ang enflexamento a 1/4 da corda (deg)
             V_LE : ang de enflexamento no bordo de ataque (deg)
             inc : ang de incidência (deg)
         '''
-        self.T = math.radians(T)            # angulo de diedro
-        self.V_c4 = math.radians(V_c4)      # angulo de enflexamento
-        self.V_LE = math.radians(V_LE)      # angulo de enflexamento no bordo de ataque
-        self.inc = math.radians(inc)        # angulo de incidência
+        # só modifica o ângulo se desejado, caso contrário permanece com o valor que já tinha
+        self.T = math.radians(T) if T != None else self.T               # angulo de diedro
+        self.V_c4 = math.radians(V_c4) if V_c4 != None else self.V_c4   # angulo de enflexamento
+        self.V_LE = math.radians(V_LE) if V_LE != None else self.V_LE   # angulo de enflexamento no bordo de ataque
+        self.inc = math.radians(inc) if inc != None else self.inc       # angulo de incidência
 
         return
     
@@ -97,15 +111,16 @@ class AeroSurface:
             K : fator obtido na figura B.1,1a do Ektins
             M : numero de mach
         '''
-        # equação 2.3
-        tg_V_c2 = np.tan(self.V_LE) - ((1 - self.lbd)/(1 + self.lbd))*2/self.AR
+        if self._noCLset:
+            # equação 2.3
+            tg_V_c2 = np.tan(self.V_LE) - ((1 - self.lbd)/(1 + self.lbd))*2/self.AR
 
-        # kappa com CLa teórico
-        k = 1.05*K*cFit.Cla_t(self.th/self.mac)/(2*np.pi)
-        # ratio of actual average wing section lift curve slope, CLa to 2pi
+            # kappa com CLa teórico
+            k = 1.05*K*cFit.Cla_t(self.th/self.mac)/(2*np.pi)
+            # ratio of actual average wing section lift curve slope, CLa to 2pi
 
-        # equação 3.8 + 3.9 modificada
-        self.CLa = 2*np.pi*self.AR/(2 + np.sqrt((1 - M**2 + tg_V_c2**2)*(self.AR/k)**2 + 4))
+            # equação 3.8 + 3.9 modificada
+            self.CLa = 2*np.pi*self.AR/(2 + np.sqrt((1 - M**2 + tg_V_c2**2)*(self.AR/k)**2 + 4))
         return
     
     def estimate_CDa (self, ro, V0, m):
@@ -116,12 +131,13 @@ class AeroSurface:
             V0 : velocidade (m/s)
             m : massa da aeronave (kg)
         '''
-        # Oswald's factor
-        e = 1/(1.05 + 0.007*math.pi*self.AR)    # Obert
-        # e = 1.78*(1 - 0.045*self.AR**0.68) - 0.64   # internet
+        if self._noCDset:
+            # Oswald's factor
+            e = 1/(1.05 + 0.007*math.pi*self.AR)    # Obert
+            # e = 1.78*(1 - 0.045*self.AR**0.68) - 0.64   # internet
 
-        # equação 3.2 + 3.3 + 3.4 modificada
-        self.CDa = 4*m*self.CLa/(ro*V0**2 * self.S*math.pi*self.AR*e)
+            # equação 3.2 + 3.3 + 3.4 modificada
+            self.CDa = 4*m*self.CLa/(ro*V0**2 * self.S*math.pi*self.AR*e)
         return
 #=======================================================================================================    
 class ControlSurface:
@@ -133,14 +149,27 @@ class ControlSurface:
         '''
         self.S = S
         self.c = c
+
+        self._noCLdset = True
+        self._noCLaset = True
         return
     
     def set_CLd (self, CLd):
-        self.CLd = CLd
+        '''
+        Coeficientes aerodinâmicos:\n
+            CLd : derivada do coef de arrasto em relação a delta (1/deg)
+        '''
+        self.CLd = CLd*180/np.pi
+        self._noCLdset = False
         return
     
     def set_CLa (self, CLa):
-        self.CLa = CLa
+        '''
+        Coeficientes aerodinâmicos:\n
+            CLa : derivada do coef sustentação em relação a alpha (1/deg)
+        '''
+        self.CLa = CLa*180/np.pi
+        self._noCLaset = False
         return
     
     def estimate_CLa (self, surf, M = 0):
@@ -149,19 +178,19 @@ class ControlSurface:
             surf : superfície aerodinâmica onde o controle se encontra
             M : numero de mach
         '''
+        if self._noCLaset:
+            beta = np.sqrt(1 - M**2)    # Prandlt-Glauert compressibility factor
+            
+            K = 0.9
+            # kappa com CLa teórico
+            k = 1.05*K*cFit.Cla_t(surf.th/surf.mac)/(2*np.pi)
+            # Apêndice B.1 do Ektins
 
-        beta = np.sqrt(1 - M**2)    # Prandlt-Glauert compressibility factor
-        
-        K = 0.9
-        # kappa com CLa teórico
-        k = 1.05*K*cFit.Cla_t(surf.th/surf.mac)/(2*np.pi)
-        # Apêndice B.1 do Ektins
-
-        tg_V_c2 = np.tan(surf.V_LE) - ((1 - surf.lbd)/(1 + surf.lbd))*2/surf.AR
-        # equação 2.3 do "Methods for estimating stability and control derivatives of conventional subsonic airplanes" de Jan Roskam
-        
-        self.CLa = 2*np.pi*self.S/(2 + np.sqrt((self.S*beta/k)**2 * (1 + (tg_V_c2/beta)**2) + 4 ))
-        # equação da figura B.1,2 para voo subsonico
+            tg_V_c2 = np.tan(surf.V_LE) - ((1 - surf.lbd)/(1 + surf.lbd))*2/surf.AR
+            # equação 2.3 do "Methods for estimating stability and control derivatives of conventional subsonic airplanes" de Jan Roskam
+            
+            self.CLa = 2*np.pi*self.S/(2 + np.sqrt((self.S*beta/k)**2 * (1 + (tg_V_c2/beta)**2) + 4 ))
+            # equação da figura B.1,2 para voo subsonico
         
         return
     
@@ -171,21 +200,22 @@ class ControlSurface:
             surf : superfície aerodinâmica onde o controle se encontra
             M : numero de mach
         '''
-        t_c = surf.th/surf.mac      # razão da espessura pela corda do perfil aerodinâmico
-        cf_c = self.c/surf.mac      # razão entre a corda da superfície de controle e a corda do perfil em que está
+        if self._noCLdset:
+            t_c = surf.th/surf.mac      # razão da espessura pela corda do perfil aerodinâmico
+            cf_c = self.c/surf.mac      # razão entre a corda da superfície de controle e a corda do perfil em que está
 
-        K1 = cFit.K1(cf_c, surf.AR)     # fator Flap-chord
-        # Figura B.2,2 do Etkins
+            K1 = cFit.K1(cf_c, surf.AR)     # fator Flap-chord
+            # Figura B.2,2 do Etkins
 
-        K = 0.9
-        Cla = 1.05*K*cFit.Cla_t(t_c)/ np.sqrt(1 - M**2)
-        # Equação B.1,1 do Etkins
+            K = 0.9
+            Cla = 1.05*K*cFit.Cla_t(t_c)/ np.sqrt(1 - M**2)
+            # Equação B.1,1 do Etkins
 
-        Cld = cFit.Cld(t_c, cf_c, self.CLa/Cla)     # Eficiencia de controle para fluxo incompressível de duas dimensões
-        # Figura B.2,1 do Etkins
+            Cld = cFit.Cld(t_c, cf_c, self.CLa/Cla)     # Eficiencia de controle para fluxo incompressível de duas dimensões
+            # Figura B.2,1 do Etkins
 
-        self.CLd = Cld * (surf.CLa/self.CLa) * K1
-        # apêndice B.2 do Etkins
+            self.CLd = Cld * (surf.CLa/self.CLa) * K1
+            # apêndice B.2 do Etkins
         return
     
     def TAU (self, S):
@@ -252,14 +282,15 @@ class Aileron (ControlSurface):
             surf : superfície aerodinâmica onde o controle se encontra
             M : numero de mach
         '''
-        super().estimate_CLd(surf, M)
+        if self._noCLdset:
+            super().estimate_CLd(surf, M)
 
-        # Fator de envergadura para flaps
-        K2 = cFit.K2(self.y2, surf.b, surf.lbd) - cFit.K2(self.y1, surf.b, surf.lbd)
-        # Figura B.2,3 do Etkins
+            # Fator de envergadura para flaps
+            K2 = cFit.K2(self.y2, surf.b, surf.lbd) - cFit.K2(self.y1, surf.b, surf.lbd)
+            # Figura B.2,3 do Etkins
 
-        self.CLd = self.CLd * K2
-        # equação do apêndice B.2 do Etikins
+            self.CLd = self.CLd * K2
+            # equação do apêndice B.2 do Etikins
         return
 #=======================================================================================================
 class Wing (AeroSurface):
@@ -406,10 +437,10 @@ class Aircraft:
             return CDy * cy * y**2                      # wing contribution
         
         def Le_int ():
-            return cy_a * y_a
+            return cy * y_a
         
         def Ne_int ():
-            return dCDy_de * cy_a * y_a
+            return dCDy_de * cy * y_a
 
         s = self.w.b/2               # pra facilitar
 
@@ -419,8 +450,8 @@ class Aircraft:
         y = np.linspace(0, s, n1)
         h = np.linspace(0, self.f.b, n2)
 
-        cy_a = np.array([cy[i] if self.a.y1 <= y[i] <= self.a.y2 else 0 for i in range(n1)])
-        y_a = np.array([y[i] if self.a.y1 <= y[i] <= self.a.y2 else 0 for i in range(n1)])
+        # cy_a = np.array([cy[i] if self.a.y1 <= y[i] <= self.a.y2 else 0 for i in range(n1)])
+        y_a = np.array([y[i] if self.a.y1 <= y[i] <= self.a.y2 else 0 for i in range(n1)]) if n1 > 3 else y
 
         # derivadas de "v" (sideslip)==============================================================
         # Side force
@@ -508,8 +539,8 @@ class Aircraft:
         '''
         if self._many_velocities:
             # tranforma angulos de float para listas com o mesmo tamanho de V0 usando o mesmo valor de float
-            self.alpha = np.radians(alpha) if type(alpha) != float else np.radians([alpha for _ in range(self._len_velocities)])
-            self.theta = np.radians(theta) if type(theta) != float else np.radians([theta for _ in range(self._len_velocities)])
+            self.alpha = np.radians(alpha) if type(alpha) != float and type(alpha) != int else np.radians([alpha for _ in range(self._len_velocities)])
+            self.theta = np.radians(theta) if type(theta) != float and type(theta) != int else np.radians([theta for _ in range(self._len_velocities)])
             
             if type(alpha) != float and type(alpha) != int:
                 if len(alpha) != self._len_velocities :
@@ -710,29 +741,20 @@ class Aircraft:
 
         return t_c, turn_rate
     
-    def update_fin (self, new_Sf = None, new_bf = None, new_c12 = None, new_th = None, new_k = None, new_lf = None, new_Lf = None, new_hf = None):
+    def new_Fin (self, new_fin: Fin, new_lf = None, new_Lf = None, new_hf = None):
         '''
-        Atualiza os dados da EV, os dados não modificados não serão alterados:\n
-            new_Sf : nova área da superfície (m^2)
-            new_bf : nova envergadura (m)
-            new_C12 : novas cordas na raiz e na ponta, respectivamente [raiz, ponta] (m)
-            new_th : nova espessura de perfil aerodinâmico
-            new_k : nova quantidade de EV's
+        Troca a EV da aeronave, os dados não modificados não serão alterados:\n
+            new_fin : novo objeto Fin
             new_lf : nova distância do CA da asa até o CA da EV no eixo x (m)
             new_Lf : nova distância do CG até o CA da EV no eixo x (m)
             new_hf : nova altura do eixo x até o CA da EV no eixo z (m)
         '''
 
-        Sf = new_Sf if new_Sf != None else self.f.S
-        bf = new_bf if new_bf != None else self.f.b
-        c12 = new_c12 if new_c12!= None else self.f.c12
-        th = new_th if new_th != None else self.f.th
-        k = new_k if new_k != None else self.f.k
         lf = new_lf if new_lf != None else self.lf
         Lf = new_Lf if new_Lf != None else self.Lf
         hf = new_hf if new_hf != None else self.hf
 
-        self.f = Fin(Sf, bf, c12, th, k)
+        self.f = new_fin
         self.set_fin(lf, Lf, hf)
 
         return

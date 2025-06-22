@@ -10,11 +10,13 @@ def Boeing_747_100 (modo: int = 1):
         V0 = 157.886        # m/s
         alt = ft2m(20000)   # m
         T, P, ro, s = getAtmosphere(alt)
+        alpha_e = 5.7
 
     elif modo == 2:
         V0 = [67.3608, 157.886, 265.481]    # m/s
         alt = [0, ft2m(20000), ft2m(40000)] # m
         T, P, ro, s = getAtmosphere(alt)
+        alpha_e = [5.7, 5.7, 5.7]
     else:
         raise ValueError("modo desconhecido, colocar somente 1 ou 2")
     
@@ -39,6 +41,15 @@ def Boeing_747_100 (modo: int = 1):
     y2 = np.linspace(12.7635, w.b/2, n//2+1 if n%2 != 0 else n/2)
     cy2 = 9.460992 + (w.c12[1] - 9.460992)*y2/(w.b/2)
     cy = np.append(cy1, cy2)
+
+    w.set_CD( # Heffley e Jewell (1972)
+         CD0 = -0.22575,
+         CDa = 0.0575
+    )
+    w.set_CL( # Heffley e Jewell (1972)
+         CL0 = -0.2132, # 1/deg
+         CLa = 0.23214  # 1/deg
+    )
 
     al = Aileron(
         S = 7.8837,       # m^2
@@ -77,8 +88,8 @@ def Boeing_747_100 (modo: int = 1):
     a = Aircraft(w, f, t, b, V0)
     a.set_control(al, el, ru)
     a.set_angles(
-        alpha = 0,
-        theta = 2
+        alpha = alpha_e,
+        theta = 0
     )
 
     a.set_fin(
@@ -104,9 +115,9 @@ def Boeing_747_100 (modo: int = 1):
         dCL_day = a.w.CLa if modo == 1 else np.array([a.w.CLa for _ in range (len(V0))]).transpose(),
         dCD_day = a.w.CDa if modo == 1 else np.array([a.w.CDa for _ in range (len(V0))]).transpose(),
         dCL_dah = a.f.CLa if modo == 1 else np.array([a.f.CLa for _ in range (len(V0))]).transpose(),
-        dCDy_de = a.w.CDa if modo == 1 else np.array([a.w.CDa for _ in range (len(V0))]).transpose(),
+        dCDy_de = a.w.CDa*a.a.S/a.w.S if modo == 1 else np.array([a.w.CDa*a.a.S/a.w.S for _ in range (len(V0))]).transpose(),
         CDy = 0.04,
-        CLy = a.get_CL_eq(),
+        CLy = a.w.get_CL(alpha_e) if modo == 1 else np.array([a.w.get_CL(alpha_e) for _ in range (len(V0))]).transpose(),
         cy = cy,
         ch = ch
     )
@@ -168,12 +179,12 @@ def Dart_T51_Sailplane(modo: int = 1):
         )
 
         w.set_CL(
-              CL0 = 0.3875, # 1/rad
-              CLa = 5.55    # 1/rad
+              CL0 = 0.3875*np.pi/180, # 1/deg
+              CLa = 5.55*np.pi/180    # 1/deg
         )
         w.set_CD(
-             CD0= 0.013,
-             CDa = 1.13
+             CD0= 0.013*np.pi/180,
+             CDa = 1.13*np.pi/180
         )
         w.set_angles(
             T = 2,          # deg
@@ -190,7 +201,7 @@ def Dart_T51_Sailplane(modo: int = 1):
             y2 = 0.94*w.b/2         # m
         )
         ai.set_CLa(
-              CLa = 4.136           # 1/rad
+              CLa = 4.136*np.pi/180           # 1/deg
         )
 
         y = np.linspace(0, w.b/2, n)
@@ -204,8 +215,8 @@ def Dart_T51_Sailplane(modo: int = 1):
             th = 0.15
         )
         f.set_CL(
-              CL0 = 0,
-              CLa = 3.68
+              CL0 = 0*np.pi/180,        # 1/deg
+              CLa = 3.68*np.pi/180      # 1/deg
         )
 
         f.set_angles(
@@ -217,7 +228,7 @@ def Dart_T51_Sailplane(modo: int = 1):
             c = 0.336               # m
         )
         ru.set_CLa(
-              CLa = 3.68            # 1/rad
+              CLa = 3.68*np.pi/180            # 1/rad
         )
 
         h = np.linspace(0, f.b, n)
@@ -256,7 +267,7 @@ def Dart_T51_Sailplane(modo: int = 1):
         )
         a.set_angles(
             alpha = alpha_e,
-            theta = alpha_e
+            theta = 0
         )
         a.set_fin(          # define as dimensões e posiçao do leme
             lf = 4.595 + 5*w.mac/12,
@@ -276,9 +287,9 @@ def Dart_T51_Sailplane(modo: int = 1):
             dCL_day = a.w.CLa if modo == 1 else np.array([a.w.CLa for _ in range (len(V0))]).transpose(),
             dCD_day = a.w.CDa if modo == 1 else np.array([a.w.CDa for _ in range (len(V0))]).transpose(),
             dCL_dah = a.f.CLa if modo == 1 else np.array([a.f.CLa for _ in range (len(V0))]).transpose(),
-            dCDy_de = a.w.CDa if modo == 1 else np.array([a.w.CDa for _ in range (len(V0))]).transpose(),
+            dCDy_de = a.w.CDa*a.a.S/a.w.S if modo == 1 else np.array([a.w.CDa*a.a.S/a.w.S for _ in range (len(V0))]).transpose(),
             CDy = CDe,
-            CLy = a.get_CL_eq(),
+            CLy = a.w.get_CL(alpha_e) if modo == 1 else np.array([a.w.get_CL(alpha_e) for _ in range (len(V0))]).transpose(),
             cy = cy,
             ch = ch
         )
