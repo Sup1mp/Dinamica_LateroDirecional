@@ -336,31 +336,30 @@ if __name__ == "__main__":
     # multifit([-0.1, -0.2, -0.4, -0.6, -0.7, -0.8, -0.9], 3, k1['K1_01'], k1['K1_02'], k1['K1_04'], k1['K1_06'], k1['K1_07'], k1['K1_08'], k1['K1_09'])
 
     # interpolação com dataframe ===============================================================================================
-    # import pandas as pd
+    import pandas as pd
 
-    # dt = pd.DataFrame(columns=["ag_Cl", "Aw", "K1"])
+    dt = pd.DataFrame(columns=["ag_Cl", "Aw", "K1"])
 
-    # k1 = get_json("K1")
-    # Aw = np.linspace(0.5, 10, 200)
-    # ag_Cl = ["01", "02", "04", "06", "07", "08", "09"]
+    k1 = get_json("K1")
+    Aw = np.linspace(0.5, 10, 200)
+    ag_Cl = ["01", "02", "04", "06", "07", "08", "09"]
 
-    # # plt.figure()
+    # plt.figure()
 
-    # for ag in ag_Cl:
-    #     co = k1[f"K1_{ag}"]
+    for ag in ag_Cl:
+        co = k1[f"K1_{ag}"]
         
+        for aw in Aw:
+            dt.loc[len(dt)] = [-float(ag)/10, aw, co[0]/(co[1]*np.log(co[2]*aw + co[3]) + co[4]) + co[5]]
+        plt.plot(Aw, co[0]/(co[1]*np.log(co[2]*Aw + co[3]) + co[4]) + co[5])
 
-    #     for aw in Aw:
-    #         dt.loc[len(dt)] = [-float(ag)/10, aw, co[0]/(co[1]*np.log(co[2]*aw + co[3]) + co[4]) + co[5]]
-    #     plt.plot(Aw, co[0]/(co[1]*np.log(co[2]*Aw + co[3]) + co[4]) + co[5])
+    plt.xlabel('A_w')
+    plt.ylabel('K1')
+    plt.legend([-float(ag)/10 for ag in ag_Cl])
+    plt.grid()
 
-    # plt.xlabel('A_w')
-    # plt.ylabel('K1')
-    # plt.legend([-float(ag)/10 for ag in ag_Cl])
-    # plt.grid()
+    dt.to_json("Util/K1_data.json")
 
-    # dt.to_json("Util/K1_data.json")
-
-    # print(dt)
-    # plt.show()
+    print(dt)
+    plt.show()
 
