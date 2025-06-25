@@ -38,7 +38,7 @@ def Boeing_747_100 (modo: int = 1):
     )
     y1 = np.linspace(3.403092, 12.7635, n//2)
     cy1 = w.c12[0] + (9.460992 - w.c12[0])*y1/12.7635
-    y2 = np.linspace(12.7635, w.b/2, n//2+1 if n%2 != 0 else n/2)
+    y2 = np.linspace(12.7635, w.b/2, int(n//2+1) if n%2 != 0 else int(n/2))
     cy2 = 9.460992 + (w.c12[1] - 9.460992)*y2/(w.b/2)
     cy = np.append(cy1, cy2)
 
@@ -112,12 +112,12 @@ def Boeing_747_100 (modo: int = 1):
     )
 
     a.derivatives(
-        dCL_day = a.w.CLa if modo == 1 else np.array([a.w.CLa for _ in range (len(V0))]).transpose(),
-        dCD_day = a.w.CDa if modo == 1 else np.array([a.w.CDa for _ in range (len(V0))]).transpose(),
-        dCL_dah = a.f.CLa if modo == 1 else np.array([a.f.CLa for _ in range (len(V0))]).transpose(),
-        dCDy_de = a.w.CDa*a.a.S/a.w.S if modo == 1 else np.array([a.w.CDa*a.a.S/a.w.S for _ in range (len(V0))]).transpose(),
+        dCL_day = a.w.CLa if modo == 1 else np.array([a.w.CLa for _ in range (n)]).transpose(),
+        dCD_day = a.w.CDa if modo == 1 else np.array([a.w.CDa for _ in range (n)]).transpose(),
+        dCL_dah = a.f.CLa if modo == 1 else np.array([a.f.CLa for _ in range (n)]).transpose(),
+        dCDy_de = a.w.CDa*a.a.S/a.w.S,# if modo == 1 else np.array([a.w.CDa*a.a.S/a.w.S for _ in range (n)]).transpose(),
         CDy = 0.04,
-        CLy = a.w.get_CL(alpha_e) if modo == 1 else np.array([a.w.get_CL(alpha_e) for _ in range (len(V0))]).transpose(),
+        CLy = a.get_CL_eq(), #a.w.get_CL(alpha_e) if modo == 1 else np.array([a.w.get_CL(alpha_e) for _ in range (n)]).transpose(),
         cy = cy,
         ch = ch
     )
@@ -284,12 +284,12 @@ def Dart_T51_Sailplane(modo: int = 1):
         CDe = 0.013 + 1.13*a.get_CL_eq()**2/(math.pi*w.AR)
 
         a.derivatives(
-            dCL_day = a.w.CLa if modo == 1 else np.array([a.w.CLa for _ in range (len(V0))]).transpose(),
-            dCD_day = a.w.CDa if modo == 1 else np.array([a.w.CDa for _ in range (len(V0))]).transpose(),
-            dCL_dah = a.f.CLa if modo == 1 else np.array([a.f.CLa for _ in range (len(V0))]).transpose(),
-            dCDy_de = a.w.CDa*a.a.S/a.w.S if modo == 1 else np.array([a.w.CDa*a.a.S/a.w.S for _ in range (len(V0))]).transpose(),
-            CDy = CDe,
-            CLy = a.w.get_CL(alpha_e) if modo == 1 else np.array([a.w.get_CL(alpha_e) for _ in range (len(V0))]).transpose(),
+            dCL_day = a.w.CLa if modo == 1 else np.array([a.w.CLa for _ in range (n)]).transpose(),
+            dCD_day = a.w.CDa if modo == 1 else np.array([a.w.CDa for _ in range (n)]).transpose(),
+            dCL_dah = a.f.CLa if modo == 1 else np.array([a.f.CLa for _ in range (n)]).transpose(),
+            dCDy_de = a.w.CDa*a.a.S/a.w.S if modo == 1 else np.array([a.w.CDa*a.a.S/a.w.S for _ in range (n)]).transpose(),
+            CDy = CDe if modo == 1 else np.array([CDe for _ in range (n)]).transpose(),
+            CLy = a.get_CL_eq(), #a.w.get_CL(alpha_e) if modo == 1 else np.array([a.w.get_CL(alpha_e) for _ in range (n)]).transpose(),
             cy = cy,
             ch = ch
         )

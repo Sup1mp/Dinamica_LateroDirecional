@@ -353,12 +353,14 @@ if __name__ == "__main__":
             dt.loc[len(dt)] = [-float(ag)/10, aw, co[0]/(co[1]*np.log(co[2]*aw + co[3]) + co[4]) + co[5]]
         plt.plot(Aw, co[0]/(co[1]*np.log(co[2]*Aw + co[3]) + co[4]) + co[5])
 
-    plt.xlabel('A_w')
+    plt.xlabel('AR')
     plt.ylabel('K1')
-    plt.legend([-float(ag)/10 for ag in ag_Cl])
+    plt.ylim([1, 2])
+    plt.xlim([0, 10])
+    plt.legend(["$(\\alpha_{\delta})_{Cl}$ = "+str(-float(ag)/10) for ag in ag_Cl])
     plt.grid()
 
-    dt.to_json("Util/K1_data.json")
+    # dt.to_json("Util/K1_data.json")
 
     print(dt)
     plt.show()

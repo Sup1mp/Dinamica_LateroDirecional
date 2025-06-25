@@ -43,29 +43,31 @@ class AeroSurface:
         self.lbd = self.c12[1] / self.c12[0]            # afilamento
         return
 
-    def set_CL (self, CL0, CLa):
+    def set_CL (self, CL0 = None, CLa = None):
         '''
         Coeficientes aerodinâmicos:\n
             CLa : derivada do coef sustentação em relação a alpha (1/deg)
             CL0 : coef sustentação em alpha = 0 (1/deg)
         '''
-        self.CLa = CLa*180/np.pi
-        self.CL0 = CL0*180/np.pi
+        self.CLa = CLa*180/np.pi if CLa != None else self.CLa
+        self.CL0 = CL0*180/np.pi if CL0 != None else self.CL0
 
-        self._noCLset = False   # indica que o CL foi setado pelo usuário
+        if CLa != None:
+            self._noCLset = False   # indica que o CL foi setado pelo usuário
 
         return
     
-    def set_CD (self, CD0, CDa):
+    def set_CD (self, CD0 = None, CDa = None):
         '''
         Coeficientes aerodinâmicos:\n
             CDa : derivada do coef de arrasto em relação a alpha (1/deg)
             CD0 : coef de arrasto em alpha = 0  (1/deg)
         '''
-        self.CDa = CDa*180/np.pi
-        self.CD0 = CD0*180/np.pi
+        self.CDa = CDa*180/np.pi if CDa != None else self.CDa
+        self.CD0 = CD0*180/np.pi if CD0 != None else self.CD0
 
-        self._noCDset = False   # indica que o CD foi setado pelo usuário
+        if CDa != None:
+            self._noCDset = False   # indica que o CD foi setado pelo usuário
 
         return
     
@@ -437,10 +439,14 @@ class Aircraft:
             return CDy * cy * y**2                      # wing contribution
         
         def Le_int ():
-            return cy * y_a
+            # return cy_a * y_a
+            return cy * y
         
         def Ne_int ():
-            return dCDy_de * cy * y_a
+            # cy_y = cy_a * y_a
+            # return np.array([dCDy_de[i] * cy_y for i in range(self._len_velocities)])
+            # return dCDy_de * cy_a * y_a
+            return dCDy_de * cy * y
 
         s = self.w.b/2               # pra facilitar
 
@@ -450,8 +456,15 @@ class Aircraft:
         y = np.linspace(0, s, n1)
         h = np.linspace(0, self.f.b, n2)
 
-        # cy_a = np.array([cy[i] if self.a.y1 <= y[i] <= self.a.y2 else 0 for i in range(n1)])
-        y_a = np.array([y[i] if self.a.y1 <= y[i] <= self.a.y2 else 0 for i in range(n1)]) if n1 > 3 else y
+        # y_a = np.array([y[i] for i in range(n1) if self.a.y1 <= y[i] <= self.a.y2])
+        # cy_a = np.array([cy[i] for i in range(n1) if self.a.y1 <= y[i] <= self.a.y2])
+        # n_a = len(y_a)
+        
+        # try:
+        #     dCDy_de_a = np.array([dCDy_de[i] for i in range(n1) if self.a.y1 <= y[i] <= self.a.y2])
+        # except:
+        #     dCDy_de_a = np.array([dCDy_de[:][i] for i in range(n1) if self.a.y1 <= y[i] <= self.a.y2])
+
 
         # derivadas de "v" (sideslip)==============================================================
         # Side force

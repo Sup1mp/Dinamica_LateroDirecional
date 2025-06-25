@@ -201,7 +201,7 @@ if __name__ == "__main__":
     K1
 
     cf_c = np.linspace(0.1, 0.78, 5)
-    Aw = np.linspace(2, 10)
+    Aw = np.linspace(0.5, 10)
     ag = []
     
     for c in cf_c:
@@ -211,7 +211,7 @@ if __name__ == "__main__":
             x.append(a)
             y.append(K1(c, a))
         plt.plot(x, y)
-        ag.append(ag_Cl(c))
+        ag.append(max(-0.9,ag_Cl(c)))
 
     plt.ylabel("K1")
     plt.xlabel('$A_{w}$')
