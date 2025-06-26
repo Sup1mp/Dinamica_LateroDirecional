@@ -11,17 +11,31 @@ def Boeing_747_100 (modo: int = 1):
         alt = ft2m(20000)   # m
         T, P, ro, s = getAtmosphere(alt)
         alpha_e = 5.7
+        CDe = 0.04
+
+        # derivadas dimensionais no sistema imperial (menos V0)
+        r = np.array([
+             [157.886, -7.281e4, -1.180e7, 6.979e6, -2.312e6, 3.073e6, 4.404e4, -2.852e6, -7.323e6, -7.555e5, -1.958e7 -1.625e3, 0, 0, 0, 1.342e5]
+        ])
 
     elif modo == 2:
-        V0 = [67.3608, 157.886, 265.481]    # m/s
+        V0 = np.array([67.3608, 157.886, 265.481])    # m/s
         alt = [0, ft2m(20000), ft2m(40000)] # m
         T, P, ro, s = getAtmosphere(alt)
         alpha_e = [5.7, 5.7, 5.7]
+        CDe = [0.263, 0.04, 0.043]
+
+        # derivadas dimensionais no sistema imperial (menos V0)
+        r = np.array([
+             [67.3608, -8.612e4, -1.370e7, 4.832e6, -3.200e6, 1.034e6, 3.975e4, -6.688e6, -1.014e7, -1.001e6, -6.911e6, -1.559e3, 0, 0, 0, 5.729e4],
+             [157.886, -7.281e4, -1.180e7, 6.979e6, -2.312e6, 3.073e6, 4.404e4, -2.852e6, -7.323e6, -7.555e5, -1.958e7, -1.625e3, 0, 0, 0, 1.342e5],
+             [265.481, -2.866e4, -8.357e6, 5.233e6, -3.391e6, 2.249e6, 5.688e4, -5.864e5, -7.279e6, 4.841e5, -2.206e7, -1.198e3, 0, 0, 0, 7.990e4]
+        ])
     else:
         raise ValueError("modo desconhecido, colocar somente 1 ou 2")
     
     n = 3
-    # real = pd.DataFrame(np.round(r, 4), columns=['V0', 'Lv', 'Lp', 'Lr', 'Le', 'Lc', 'Nv', 'Np', 'Nr', 'Ne', 'Nc', 'Yv', 'Yp', 'Yr', 'Ye', 'Yc'])
+    real = pd.DataFrame(np.round(r, 4), columns=['V0', 'Lv', 'Lp', 'Lr', 'Le', 'Lc', 'Nv', 'Np', 'Nr', 'Ne', 'Nc', 'Yv', 'Yp', 'Yr', 'Ye', 'Yc'])
     #=============================================================================================
     w = Wing(
         S = 510.9667,             # m^2
@@ -116,13 +130,36 @@ def Boeing_747_100 (modo: int = 1):
         dCD_day = a.w.CDa if modo == 1 else np.array([a.w.CDa for _ in range (n)]).transpose(),
         dCL_dah = a.f.CLa if modo == 1 else np.array([a.f.CLa for _ in range (n)]).transpose(),
         dCDy_de = a.w.CDa*a.a.S/a.w.S,# if modo == 1 else np.array([a.w.CDa*a.a.S/a.w.S for _ in range (n)]).transpose(),
-        CDy = 0.04,
+        CDy = CDe,
         CLy = a.get_CL_eq(), #a.w.get_CL(alpha_e) if modo == 1 else np.array([a.w.get_CL(alpha_e) for _ in range (n)]).transpose(),
         cy = cy,
         ch = ch
     )
 
-    return a
+    for col, val in real.items():
+         # Converte para o SI depois adimensionaliza
+         # fonte conversões: google
+         if col in ["Yv"]:
+              # lb/s -> kg/s
+              real[col] = (val/2.205) * (2/(ro*V0*a.w.S))
+
+         elif col in ["Yp", "Yr", "Lv", "Nv"]:
+              # lb*ft/s -> kg*m/s
+              real[col] = (val*0.138254954) * (2/(ro*V0*a.w.S*a.w.b))
+
+         elif col in ["Lp", "Lr", "Np", "Nr"]:
+              # (lb*ft^2)/s -> (kg*m^2)/s
+              real[col] = (val*0.0421401101) * (2/(ro*V0*a.w.S*a.w.b**2))
+
+         elif col in ["Ye", "Yc"]:
+              # lb*ft/(s^2) -> kg*m/(s^2)
+              real[col] = (val*0.138254954) * (2/(ro*(V0**2)*a.w.S))
+
+         elif col in ["Le", "Lc", "Ne", "Nc"]:
+              # lb*ft^2/(s^2) -> kg*m^2/(s^2)
+              real[col] = (val*0.0421401101) * (2/(ro*(V0**2)*a.w.S*a.w.b))
+         
+    return a, np.round(real, 4)
 
 def Dart_T51_Sailplane(modo: int = 1):
         '''
@@ -307,10 +344,10 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     # EXEMPLO DART
     # a, real = Dart_T51_Sailplane(modo = 2)
-    a = Boeing_747_100(modo=2)
+    a, real = Boeing_747_100(modo=2)
 
     # comparação de erro
-    # compara_derivadas(real, a.get_derivatives())
+    compara_derivadas(real, a.get_derivatives())
 
     # DINAMICA
     from Dinamica_LateroDirecional import Dinamica_LateroDirecional
