@@ -113,7 +113,7 @@ def K1 (cf_c, Aw):
     
 
     data = pd.DataFrame(get_json('K1_data'))
-    ag = np.unique(data['ag_Cl'])       # valores unicos ag_Cl
+    ag = np.sort(np.unique(data['ag_Cl']))[::-1]       # valores unicos ag_Cl
     aw = np.unique(data['Aw'])          # valores unicos Aw
     stru = (len(ag), len(aw))           # estrutura
     points = (ag, aw)
@@ -215,6 +215,8 @@ if __name__ == "__main__":
 
     plt.ylabel("K1")
     plt.xlabel('$A_{w}$')
+    plt.xlim([0, 10])
+    plt.ylim([1, 2])
     plt.legend(['$(\\alpha_{\delta})_{C_{l}}$ = '+str(np.round(i, 2)) for i in ag])
     #==============================================================================================
     # K2

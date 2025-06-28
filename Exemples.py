@@ -15,7 +15,7 @@ def Boeing_747_100 (modo: int = 1):
 
         # derivadas dimensionais no sistema imperial (menos V0)
         r = np.array([
-             [157.886, -7.281e4, -1.180e7, 6.979e6, -2.312e6, 3.073e6, 4.404e4, -2.852e6, -7.323e6, -7.555e5, -1.958e7 -1.625e3, 0, 0, 0, 1.342e5]
+             [157.886, -7.281e4, -1.180e7, 6.979e6, -2.312e6, 3.073e6, 4.404e4, -2.852e6, -7.323e6, -7.555e5, -1.958e7, -1.625e3, 0, 0, 0, 1.342e5]
         ])
 
     elif modo == 2:
@@ -58,11 +58,11 @@ def Boeing_747_100 (modo: int = 1):
 
     w.set_CD( # Heffley e Jewell (1972)
          CD0 = -0.22575,
-         CDa = 0.0575
+        #  CDa = 0.0575
     )
     w.set_CL( # Heffley e Jewell (1972)
          CL0 = -0.2132, # 1/deg
-         CLa = 0.23214  # 1/deg
+        #  CLa = 0.23214  # 1/deg
     )
 
     al = Aileron(
@@ -126,12 +126,12 @@ def Boeing_747_100 (modo: int = 1):
     )
 
     a.derivatives(
-        dCL_day = a.w.CLa if modo == 1 else np.array([a.w.CLa for _ in range (n)]).transpose(),
-        dCD_day = a.w.CDa if modo == 1 else np.array([a.w.CDa for _ in range (n)]).transpose(),
-        dCL_dah = a.f.CLa if modo == 1 else np.array([a.f.CLa for _ in range (n)]).transpose(),
-        dCDy_de = a.w.CDa*a.a.S/a.w.S,# if modo == 1 else np.array([a.w.CDa*a.a.S/a.w.S for _ in range (n)]).transpose(),
-        CDy = CDe,
-        CLy = a.get_CL_eq(), #a.w.get_CL(alpha_e) if modo == 1 else np.array([a.w.get_CL(alpha_e) for _ in range (n)]).transpose(),
+        dCL_day = np.linspace(a.w.CLa, 0, n),
+        dCD_day = np.linspace(a.w.CDa, 0, n),
+        dCL_dah = np.linspace(a.f.CLa, 0, n),
+        dCDy_de = np.linspace(a.w.CDa*a.a.S/a.w.S, 0, n),# if modo == 1 else np.array([a.w.CDa*a.a.S/a.w.S for _ in range (n)]).transpose(),
+        CDy = np.linspace(CDe, 0, n),
+        CLy = np.linspace(a.get_CL_eq(), 0, n), #a.w.get_CL(alpha_e) if modo == 1 else np.array([a.w.get_CL(alpha_e) for _ in range (n)]).transpose(),
         cy = cy,
         ch = ch
     )
@@ -217,11 +217,11 @@ def Dart_T51_Sailplane(modo: int = 1):
 
         w.set_CL(
               CL0 = 0.3875*np.pi/180, # 1/deg
-              CLa = 5.55*np.pi/180    # 1/deg
+            #   CLa = 5.55*np.pi/180    # 1/deg
         )
         w.set_CD(
              CD0= 0.013*np.pi/180,
-             CDa = 1.13*np.pi/180
+            #  CDa = 1.13*np.pi/180
         )
         w.set_angles(
             T = 2,          # deg
@@ -313,7 +313,7 @@ def Dart_T51_Sailplane(modo: int = 1):
         )
         # calculos=================================================================================
         a.estimate_Coefs(
-            k = 1,
+            k = 0.9,
             ro = ro,
             M = mach(V0, alt)
         )

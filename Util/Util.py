@@ -148,7 +148,6 @@ def getAtmosphere (altitude):
 
     return temp, pres, dens, sound
 
-
 def get_json (filename):
     '''
     Retorna dados de json do caminho "Util/Data/filename"
@@ -164,6 +163,24 @@ def save_json(data, filename):
     with open(f"Util/Data/{filename}.json", '+w') as file:
         json.dump(data, file)   # salva dados no arquivo
     return
+
+def oswald (lbd, AR, T, V_c4, M):
+
+    # contabildade do efeito de couple entre lbd e V_c4
+    d_lbd = -0.357 + 0.45*np.exp(-0.0375*V_c4)
+
+    # fit de curva por Nita e Scholz
+    f_lbd = np.polyval(np.array([0.0524, -0.15, 0.1659, -0.0706, 0.0119]), lbd-d_lbd)
+
+    # fator de correção para velocidade de Mach > 0.3 
+    k_e = np.where(M > 0.3, -0.001521*((M/0.3 - 1)**10.82) + 1, 1)
+
+    # fator de correção para diedro
+    k_T = (1 + (1/np.cos(T) - 1)/2.83)**2
+
+    # Equação do fator de Oswald dado por Hörner e trabalhada por Nita e Scholz
+    return (1/(1+f_lbd*AR)) * 0.114  * k_T * k_e
+    
 
 if __name__ == "__main__":
     # # erro test
@@ -182,6 +199,7 @@ if __name__ == "__main__":
     # t, p, d, s = getAtmosphere([19000, 200])
     # print(f"temp: {t} K \npress: {p} N/m^2\ndens: {d} kg/m^3\nsound: {s} m/s")
 
-    V0 = 200
-    alt = 5000
-    print(f"Para {V0} m/s a {alt} m de altitude:\nmach: {mach(V0, alt)}")
+    # V0 = 200
+    # alt = 5000
+    # print(f"Para {V0} m/s a {alt} m de altitude:\nmach: {mach(V0, alt)}")
+    print(np.exp(1))

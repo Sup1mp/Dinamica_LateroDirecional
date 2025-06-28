@@ -1,7 +1,7 @@
 import math
 import numpy as np
 from pandas import DataFrame
-from Util.util import trapezoidal
+from Util.util import trapezoidal, oswald
 from Util import cFit
 
 #=======================================================================================================
@@ -125,21 +125,23 @@ class AeroSurface:
             self.CLa = 2*np.pi*self.AR/(2 + np.sqrt((1 - M**2 + tg_V_c2**2)*(self.AR/k)**2 + 4))
         return
     
-    def estimate_CDa (self, ro, V0, m):
+    def estimate_CDa (self, ro, V0, m, M=0):
         '''
         Estima o valor de CDa com base em métodos paramétricos presentes no "Methods for estimating stability and control derivatives\
         of conventional subsonic airplanes" de Jan Roskam:\n
             ro : densidade do ar (kg/m^3)
             V0 : velocidade (m/s)
             m : massa da aeronave (kg)
+            M : número de mach
         '''
         if self._noCDset:
             # Oswald's factor
-            e = 1/(1.05 + 0.007*math.pi*self.AR)    # Obert
+            e = oswald(self.lbd, self.AR, self.T, self.V_c4, M)
+            # e = 1/(1.05 + 0.007*math.pi*self.AR)    # Obert
             # e = 1.78*(1 - 0.045*self.AR**0.68) - 0.64   # internet
 
             # equação 3.2 + 3.3 + 3.4 modificada
-            self.CDa = 4*m*self.CLa/(ro*V0**2 * self.S*math.pi*self.AR*e)
+            self.CDa = 4*m*self.CLa/(ro*(V0**2) * self.S*math.pi*self.AR*e)
         return
 #=======================================================================================================    
 class ControlSurface:
@@ -674,15 +676,16 @@ class Aircraft:
         # self.e.estimate_CLd(self.t)     # profundor
         return
     
-    def estimate_CDa (self, ro):
+    def estimate_CDa (self, ro, M = 0):
         '''
         Estima os valores de CDa para todas as superfícies:\n
             ro : densidade do ar (kg/m^3)
+            M : numero de mach
         '''
         # CDa total da aeronave
-        self.w.estimate_CDa(ro, self.V0, self.m)
-        self.f.estimate_CDa(ro, self.V0, self.m)
-        # self.t.estimate_CDa(ro, self.V0, self.m)
+        self.w.estimate_CDa(ro, self.V0, self.m, M)
+        self.f.estimate_CDa(ro, self.V0, self.m, M)
+        # self.t.estimate_CDa(ro, self.V0, self.m, M)
         return
 
     def estimate_Coefs (self, k: float, ro : float, M = 0):
@@ -697,7 +700,7 @@ class Aircraft:
 
         self.estimate_CLd(M)
         
-        self.estimate_CDa(ro)
+        self.estimate_CDa(ro, M)
         
         return
     
