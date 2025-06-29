@@ -247,7 +247,7 @@ class Dinamica_LateroDirecional:
     
     def step(self, tmax = 10):
         '''
-        Apresenta o gráfico para a resposta em step do sistema\n
+        Apresenta o gráfico para a resposta em degrau do sistema\n
             tmax : tempo máximo analisado (s)
         '''
         fig, ax = plt.subplots(5, 2)
@@ -282,6 +282,47 @@ class Dinamica_LateroDirecional:
         ax[4][1].set(xlabel="t (s)")
 
         fig.tight_layout()  # ajusta o tamanho
+
+        return
+    
+    def impulse (self, tmax = 10):
+        '''
+        Apresenta o gráfico para a resposta em impulso do sistema\n
+            tmax : tempo máximo analisado (s)
+        '''
+        fig, ax = plt.subplots(5, 2)
+
+        # organização dos titulos na ordem em que aparecem
+        titles = ['$v_{\epsilon}$ (m/s)', '$v_{\zeta}$ (m/s)',
+                  '$r_{\epsilon}$ (deg/s)', '$r_{\zeta}$ (deg/s)',
+                  '$p_{\epsilon}$ (deg/s)', '$p_{\zeta}$ (deg/s)',
+                  '$\phi_{\epsilon}$ (deg)', '$\phi_{\zeta}$ (deg)',
+                  '$\psi_{\epsilon}$ (deg)', '$\psi_{\zeta}$ (deg)'
+        ]
+
+        for i in range(10):
+            for j in range(self.aero._len_velocities):
+                
+                # step response
+                if self.aero._many_velocities:
+                    # t, y = signal.step(signal.TransferFunction(self.N[i][j], self.delta[j, :]), T=np.linspace(0, tmax, tmax*10))
+                    result = ct.impulse_response(ct.tf(self.N[i][j], self.delta[j, :]), T=np.linspace(0, tmax, tmax*10))
+                else:
+                    # t, y = signal.step(signal.TransferFunction(self.N[i], self.delta), T=np.linspace(0, tmax, tmax*10))
+                    result = ct.impulse_response(ct.tf(self.N[i], self.delta), T=np.linspace(0, tmax, tmax*10))
+
+                # coloca as legendas e o nome de cada gráfico
+                # ax[i//2][i%2].plot(t, y)
+                ax[i//2][i%2].plot(result.time, result.outputs)
+            ax[i//2][i%2].set(ylabel=titles[i])
+            ax[i//2][i%2].grid()
+            ax[i//2][i%2].set_xlim([0, tmax])
+            # ax[i//2][i%2].legend([f"{self.aero.V0[jj]} m/s" for jj in range(len(self.aero.V))])
+        ax[4][0].set(xlabel="t (s)")
+        ax[4][1].set(xlabel="t (s)")
+
+        fig.tight_layout()  # ajusta o tamanho
+        # fig.suptitle("Resposta Impulso").set_y(0.95)
 
         return
     
