@@ -23,7 +23,7 @@ def Boeing_747_100 (modo: int = 1):
         alt = [0, ft2m(20000), ft2m(40000)] # m
         T, P, ro, s = getAtmosphere(alt)
         alpha_e = [5.7, 5.7, 5.7]
-        CDe = [0.263, 0.04, 0.043]
+        CDe = np.array([0.263, 0.04, 0.043])
 
         # derivadas dimensionais no sistema imperial (menos V0)
         r = np.array([
@@ -34,7 +34,7 @@ def Boeing_747_100 (modo: int = 1):
     else:
         raise ValueError("modo desconhecido, colocar somente 1 ou 2")
     
-    n = 3
+    n = 10
     real = pd.DataFrame(np.round(r, 4), columns=['V0', 'Lv', 'Lp', 'Lr', 'Le', 'Lc', 'Nv', 'Np', 'Nr', 'Ne', 'Nc', 'Yv', 'Yp', 'Yr', 'Ye', 'Yc'])
     #=============================================================================================
     w = Wing(
@@ -46,14 +46,16 @@ def Boeing_747_100 (modo: int = 1):
     )
     w.set_angles(
         T = 8,        # deg
-        V_c4 = 51.5,  # deg
+        V_c4 = 37,  # deg
         V_LE = 48,    # deg
         inc = 2.5     # deg
     )
     y1 = np.linspace(3.403092, 12.7635, n//2)
     cy1 = w.c12[0] + (9.460992 - w.c12[0])*y1/12.7635
+
     y2 = np.linspace(12.7635, w.b/2, int(n//2+1) if n%2 != 0 else int(n/2))
     cy2 = 9.460992 + (w.c12[1] - 9.460992)*y2/(w.b/2)
+
     cy = np.append(cy1, cy2)
 
     w.set_CD( # Heffley e Jewell (1972)
@@ -126,12 +128,12 @@ def Boeing_747_100 (modo: int = 1):
     )
 
     a.derivatives(
-        dCL_day = np.linspace(a.w.CLa, 0, n),
-        dCD_day = np.linspace(a.w.CDa, 0, n),
-        dCL_dah = np.linspace(a.f.CLa, 0, n),
-        dCDy_de = np.linspace(a.w.CDa*a.a.S/a.w.S, 0, n),# if modo == 1 else np.array([a.w.CDa*a.a.S/a.w.S for _ in range (n)]).transpose(),
-        CDy = np.linspace(CDe, 0, n),
-        CLy = np.linspace(a.get_CL_eq(), 0, n), #a.w.get_CL(alpha_e) if modo == 1 else np.array([a.w.get_CL(alpha_e) for _ in range (n)]).transpose(),
+        dCL_day = np.linspace(a.w.CLa, 0, n).transpose(),
+        dCD_day = np.linspace(a.w.CDa, 0, n).transpose(),
+        dCL_dah = np.linspace(a.f.CLa, 0, n).transpose(),
+        dCDy_de = np.linspace(a.w.CDa*a.a.S/a.w.S, 0, n).transpose(),# if modo == 1 else np.array([a.w.CDa*a.a.S/a.w.S for _ in range (n)]).transpose(),
+        CDy = np.linspace(CDe, 0, n).transpose(),
+        CLy = np.linspace(a.get_CL_eq(), 0, n).transpose(), #a.w.get_CL(alpha_e) if modo == 1 else np.array([a.w.get_CL(alpha_e) for _ in range (n)]).transpose(),
         cy = cy,
         ch = ch
     )
@@ -200,7 +202,7 @@ def Dart_T51_Sailplane(modo: int = 1):
         T, P, ro, S = getAtmosphere(alt)
         # ro = 0.3809     # densidade do ar kg/m^3
         # ro = 1.2754     # densidade do ar kg/m^3 para 20°C
-        n = 11          # numero de elementos
+        n = 50          # numero de elementos
 
         # derivadas e velocidade
         
@@ -326,7 +328,7 @@ def Dart_T51_Sailplane(modo: int = 1):
             dCL_dah = a.f.CLa if modo == 1 else np.array([a.f.CLa for _ in range (n)]).transpose(),
             dCDy_de = a.w.CDa*a.a.S/a.w.S if modo == 1 else np.array([a.w.CDa*a.a.S/a.w.S for _ in range (n)]).transpose(),
             CDy = CDe if modo == 1 else np.array([CDe for _ in range (n)]).transpose(),
-            CLy = a.get_CL_eq(), #a.w.get_CL(alpha_e) if modo == 1 else np.array([a.w.get_CL(alpha_e) for _ in range (n)]).transpose(),
+            CLy = a.get_CL_eq() if modo == 1 else np.array([a.get_CL_eq() for _ in range (n)]).transpose(), #a.w.get_CL(alpha_e) if modo == 1 else np.array([a.w.get_CL(alpha_e) for _ in range (n)]).transpose(),
             cy = cy,
             ch = ch
         )

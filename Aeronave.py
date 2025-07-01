@@ -122,7 +122,7 @@ class AeroSurface:
             # ratio of actual average wing section lift curve slope, CLa to 2pi
 
             # equação 3.8 + 3.9 modificada
-            self.CLa = 2*np.pi*self.AR/(2 + np.sqrt((1 - M**2 + tg_V_c2**2)*(self.AR/k)**2 + 4))
+            self.CLa = 2*np.pi*self.AR/(2 + np.sqrt((1 - M**2 + tg_V_c2**2)*((self.AR/k)**2) + 4))
         return
     
     def estimate_CDa (self, ro, V0, m, M=0):
@@ -143,6 +143,14 @@ class AeroSurface:
             # equação 3.2 + 3.3 + 3.4 modificada
             self.CDa = 4*m*self.CLa/(ro*(V0**2) * self.S*math.pi*self.AR*e)
         return
+    
+    def describe (self):
+        print(f"S [m^2] = {round(self.S, 2)}\nb [m] = {round(self.b, 2)}\nmac [m] = {round(self.mac, 2)}\nc_r [m] = {round(self.c12[0], 2)}\nc_p [m] = {round(self.c12[1], 2)}")
+        print(f"AR = {round(self.AR, 2)}\nlbd = {round(self.lbd, 2)}\nx_CA [m] = {round(self.x_CA, 2)}")
+        print(f"T [deg] = {round(np.radians(self.T), 2)}\nV_c4 [deg] = {round(np.radians(self.V_c4), 2)}\nV_LE [deg] = {round(np.radians(self.V_LE), 2)}\ninc [deg] = {round(np.radians(self.inc), 2)}\n")
+        print(f"CD0 [1/deg] = {round(self.CD0 * np.pi/180, 2)}\nCDa [1/deg] = {round(self.CDa * np.pi/180, 2)}\nCL0 [1/deg] = {round(self.CL0 * np.pi/180, 2)}\nCLa [1/deg] = {round(self.CLa * np.pi/180, 2)}")
+
+        return
 #=======================================================================================================    
 class ControlSurface:
     def __init__(self, S: float, c: float):
@@ -154,8 +162,9 @@ class ControlSurface:
         self.S = S
         self.c = c
 
-        self._noCLdset = True
-        self._noCLaset = True
+        self._noCLdset = True   # coeficiente CLd ausênte
+        self._noCLaset = True   # coeficiente CLa ausênte
+
         return
     
     def set_CLd (self, CLd):
@@ -381,7 +390,9 @@ class Body:
         self.Sl = Sl
         self.h = h
 
-        self.CDl = -(0.00714 + 0.674*h**2/Sl)   # estimation of sideforce due to sideslip for body
+        # Estima coeficiente de força lateral devido a derrapagem
+        self.CDl = -(0.00714 + 0.674*h**2/Sl)
+        
         return
 #=======================================================================================================
 class Aircraft:
@@ -420,7 +431,7 @@ class Aircraft:
             ch : corda local na coordenada h
         '''
         def Lv_int1 ():
-            return cy * dCL_day * self.w.T * y          # Wing with Dihedral
+            return dCL_day * cy * self.w.T * y          # Wing with Dihedral
         
         def Lv_int2 ():
             return cy * y                               # wing with aft sweep
@@ -429,10 +440,10 @@ class Aircraft:
             return dCL_dah * ch * h                     # fin contribution
         
         def Lp_int ():
-            return (dCL_day + CDy)*cy * y**2            # wing contribuiton
+            return (dCL_day + CDy) * cy * y**2            # wing contribuiton
         
         def Np_int ():
-            return (CLy - dCD_day)*cy * y**2            # wing contribution
+            return (CLy - dCD_day) * cy * y**2            # wing contribution
         
         def Lr_int ():
             return CLy * cy * y**2                      # wing contribution
@@ -441,14 +452,12 @@ class Aircraft:
             return CDy * cy * y**2                      # wing contribution
         
         def Le_int ():
-            # return cy_a * y_a
-            return cy * y
+            return cy_a * y_a
+            # return cy * y
         
         def Ne_int ():
-            # cy_y = cy_a * y_a
-            # return np.array([dCDy_de[i] * cy_y for i in range(self._len_velocities)])
-            # return dCDy_de * cy_a * y_a
-            return dCDy_de * cy * y
+            return dCDy_de_a * cy_a * y_a
+            # return dCDy_de * cy * y
 
         s = self.w.b/2               # pra facilitar
 
@@ -458,14 +467,14 @@ class Aircraft:
         y = np.linspace(0, s, n1)
         h = np.linspace(0, self.f.b, n2)
 
-        # y_a = np.array([y[i] for i in range(n1) if self.a.y1 <= y[i] <= self.a.y2])
-        # cy_a = np.array([cy[i] for i in range(n1) if self.a.y1 <= y[i] <= self.a.y2])
-        # n_a = len(y_a)
+        y_a = np.array([y[i] for i in range(n1) if self.a.y1 <= y[i] <= self.a.y2])
+        cy_a = np.array([cy[i] for i in range(n1) if self.a.y1 <= y[i] <= self.a.y2])
+        n_a = len(y_a)
         
-        # try:
-        #     dCDy_de_a = np.array([dCDy_de[i] for i in range(n1) if self.a.y1 <= y[i] <= self.a.y2])
-        # except:
-        #     dCDy_de_a = np.array([dCDy_de[:][i] for i in range(n1) if self.a.y1 <= y[i] <= self.a.y2])
+        try:
+            dCDy_de_a = np.array([dCDy_de[i] for i in range(n1) if self.a.y1 <= y[i] <= self.a.y2])
+        except:
+            dCDy_de_a = np.array([[dCDy_de[j][i] for i in range(n1) if self.a.y1 <= y[i] <= self.a.y2] for j in range(self._len_velocities)])
 
 
         # derivadas de "v" (sideslip)==============================================================
@@ -507,10 +516,12 @@ class Aircraft:
         self.Ye = 0
 
         # Rolling moment
-        self.Le = -self.a.CLd*trapezoidal(Le_int(), self.a.y1, self.a.y2, n1)/(self.w.S * s)
+        # self.Le = -self.a.CLd*trapezoidal(Le_int(), self.a.y1, self.a.y2, n1)/(self.w.S * s)
+        self.Le = -self.a.CLd*trapezoidal(Le_int(), y_a[0], y_a[-1], n_a)/(self.w.S * s)
         
         # Yawing moment
-        self.Ne = trapezoidal(Ne_int(), self.a.y1, self.a.y2, n1)/(self.w.S * s)
+        # self.Ne = trapezoidal(Ne_int(), self.a.y1, self.a.y2, n1)/(self.w.S * s)
+        self.Ne = trapezoidal(Ne_int(), y_a[0], y_a[-1], n_a)/(self.w.S * s)
 
         # derivadas de "c" (rudder)================================================================
         # Side force
@@ -757,6 +768,13 @@ class Aircraft:
 
         return t_c, turn_rate
     
+    def describe (self):
+        '''
+        Realiza o print de todas as informações da aeronave
+        '''
+        print(f"Asa:\n{self.w.describe()}\n\nFin:\n{self.f.describe()}\nlf [m] = {round(self.lf, 2)}\nLf [m] = {round(self.Lf, 2)}")
+        return
+
     def new_Fin (self, new_fin: Fin, new_lf = None, new_Lf = None, new_hf = None):
         '''
         Troca a EV da aeronave, os dados não modificados não serão alterados:\n

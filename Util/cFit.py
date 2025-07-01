@@ -120,7 +120,7 @@ def K1 (cf_c, Aw):
     k1 = np.reshape(data['K1'], stru)   # estrutura resposta como os valores
 
     # força e limita AR maximo para 10 (limite da interpolação)
-    return interpn(points, k1, (max(-0.9,ag_Cl(cf_c)), min(Aw, 10)))[0]
+    return interpn(points, k1, (min(max(-0.9,ag_Cl(cf_c)), -0.1), min(Aw, 10)))[0]
 
 def K2 (y, bw, lbd):
     '''
@@ -200,7 +200,8 @@ if __name__ == "__main__":
     #==============================================================================================
     K1
 
-    cf_c = np.linspace(0.1, 0.78, 5)
+    # cf_c = np.linspace(0.01, 0.78, 8)
+    cf_c = np.array([0.02, 0.05, 0.12, 0.3, 0.4, 0.5, 0.78])
     Aw = np.linspace(0.5, 10)
     ag = []
     
